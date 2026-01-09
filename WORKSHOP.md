@@ -2,6 +2,8 @@
 
 Welcome to the Simon Game workshop! Follow these steps to get the multiplayer Simon Says game running locally and deployed to the cloud.
 
+> 💡 **Tip:** Hover over any gray code block to see the copy button, or triple-click inside to select all text.
+
 ---
 
 ## 📋 Prerequisites
