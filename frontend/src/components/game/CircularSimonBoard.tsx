@@ -96,15 +96,16 @@ const ColorWedge: React.FC<WedgeProps> = ({
   innerRadius,
   outerRadius,
 }) => {
-  const colors: Record<Color, { base: string; light: string }> = {
-    green: { base: '#2ecc40', light: '#7dff8a' },
-    red: { base: '#ff4136', light: '#ff8580' },
-    yellow: { base: '#ffdc00', light: '#fff580' },
-    blue: { base: '#0074d9', light: '#7abfff' },
+  // DIMMED base colors (darker when inactive) and VERY BRIGHT when active
+  const colors: Record<Color, { dim: string; bright: string }> = {
+    green: { dim: '#1a7a28', bright: '#44ff66' },  // Dark green -> Neon green
+    red: { dim: '#8b1a1a', bright: '#ff4444' },    // Dark red -> Bright red
+    yellow: { dim: '#8b7a00', bright: '#ffff00' }, // Dark yellow -> Pure yellow
+    blue: { dim: '#0a3d6b', bright: '#44aaff' },   // Dark blue -> Bright blue
   };
 
   const wedgeColor = colors[color];
-  const fillColor = isActive ? wedgeColor.light : wedgeColor.base;
+  const fillColor = isActive ? wedgeColor.bright : wedgeColor.dim;
 
   const path = createWedgePath(
     centerX,
@@ -119,16 +120,18 @@ const ColorWedge: React.FC<WedgeProps> = ({
     <path
       d={path}
       fill={fillColor}
-      stroke="#1a1a1a"
-      strokeWidth="4"
+      stroke="#000"
+      strokeWidth="5"
       onClick={disabled ? undefined : onClick}
       style={{
         cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'fill 0.15s ease, filter 0.15s ease, transform 0.15s ease',
-        filter: isActive ? 'brightness(1.3) drop-shadow(0 0 20px ' + wedgeColor.light + ')' : 'brightness(1)',
+        transition: 'fill 0.1s ease, filter 0.1s ease, transform 0.1s ease',
+        filter: isActive 
+          ? `brightness(1.5) drop-shadow(0 0 30px ${wedgeColor.bright}) drop-shadow(0 0 60px ${wedgeColor.bright})` 
+          : 'brightness(1)',
         transformOrigin: `${centerX}px ${centerY}px`,
-        transform: isActive ? 'scale(1.02)' : 'scale(1)',
-        opacity: disabled ? 0.7 : 1,
+        transform: isActive ? 'scale(1.05)' : 'scale(1)',
+        opacity: disabled ? 0.6 : 1,
       }}
       role="button"
       aria-label={`${color} button`}
@@ -178,15 +181,19 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
     { color: 'blue', start: 0 + gapAngle / 2, end: 90 - gapAngle / 2 },        // Bottom Right
   ];
 
-  // Animate sequence when showing
+  // Track which color in sequence is being shown
+  const [sequenceIndex, setSequenceIndex] = useState<number>(-1);
+
+  // Animate sequence when showing - DRAMATIC and SLOW
   useEffect(() => {
     if (!isShowingSequence || sequence.length === 0) {
       setActiveColor(null);
+      setSequenceIndex(-1);
       return;
     }
 
-    const SHOW_DURATION = 700;
-    const SHOW_GAP = 300;
+    const SHOW_DURATION = 800;  // How long each color stays lit
+    const SHOW_GAP = 400;       // Gap between colors (all dark)
 
     let currentIndex = 0;
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -194,11 +201,18 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
     const showNextColor = () => {
       if (currentIndex >= sequence.length) {
         setActiveColor(null);
+        setSequenceIndex(-1);
         return;
       }
 
       const color = sequence[currentIndex];
       setActiveColor(color);
+      setSequenceIndex(currentIndex);
+
+      // Vibrate when showing sequence
+      if ('vibrate' in navigator) {
+        navigator.vibrate(100);
+      }
 
       setTimeout(() => {
         setActiveColor(null);
@@ -207,11 +221,13 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
       }, SHOW_DURATION);
     };
 
-    showNextColor();
+    // Small delay before starting sequence
+    timeoutId = setTimeout(showNextColor, 500);
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       setActiveColor(null);
+      setSequenceIndex(-1);
     };
   }, [isShowingSequence, sequence]);
 
@@ -246,15 +262,21 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
         <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
           Round {round}
         </h2>
-        <p className="text-xs sm:text-sm text-gray-300">
-          {disabled 
-            ? '👻 Spectating...' 
-            : isShowingSequence 
-              ? `👀 WATCH! (${sequence.length} color${sequence.length > 1 ? 's' : ''})` 
+        {isShowingSequence ? (
+          <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg px-4 py-2 animate-pulse">
+            <p className="text-yellow-400 font-bold text-base">
+              👀 MEMORIZE THE PATTERN!
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs sm:text-sm text-gray-300">
+            {disabled 
+              ? '👻 Spectating...' 
               : isInputPhase
-                ? '🎮 Your turn!' 
+                ? '🎮 Repeat the pattern!' 
                 : '✅ Ready'}
-        </p>
+          </p>
+        )}
       </div>
 
       {/* Timer Display */}
@@ -319,19 +341,46 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
             strokeWidth="3"
           />
 
-          {/* SIMON text */}
-          <text
-            x={centerX}
-            y={centerY + 4}
-            textAnchor="middle"
-            fill="white"
-            fontSize="20"
-            fontWeight="bold"
-            fontFamily="Arial, sans-serif"
-            letterSpacing="2"
-          >
-            SIMON
-          </text>
+          {/* Center content - shows sequence counter during playback, or SIMON text */}
+          {isShowingSequence && sequenceIndex >= 0 ? (
+            <>
+              {/* Sequence counter */}
+              <text
+                x={centerX}
+                y={centerY + 8}
+                textAnchor="middle"
+                fill="#fff"
+                fontSize="32"
+                fontWeight="bold"
+                fontFamily="Arial, sans-serif"
+              >
+                {sequenceIndex + 1}
+              </text>
+              <text
+                x={centerX}
+                y={centerY + 24}
+                textAnchor="middle"
+                fill="#888"
+                fontSize="12"
+                fontFamily="Arial, sans-serif"
+              >
+                of {sequence.length}
+              </text>
+            </>
+          ) : (
+            <text
+              x={centerX}
+              y={centerY + 6}
+              textAnchor="middle"
+              fill="white"
+              fontSize="18"
+              fontWeight="bold"
+              fontFamily="Arial, sans-serif"
+              letterSpacing="2"
+            >
+              SIMON
+            </text>
+          )}
         </svg>
       </div>
 
