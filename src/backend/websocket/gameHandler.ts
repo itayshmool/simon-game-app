@@ -9,8 +9,14 @@ import { Server, Socket } from 'socket.io';
 import cookie from 'cookie';
 import { verifyToken } from '../utils/auth';
 import { gameService } from '../services/gameService';
-import { PLATFORM_CONSTANTS } from '@shared/types';
+import { 
+  initializeColorRaceGame, 
+  processRound, 
+  determineWinner 
+} from '../utils/colorRaceLogic';
+import { PLATFORM_CONSTANTS, COLOR_RACE_CONSTANTS } from '@shared/types';
 import type { Player } from '@shared/types';
+import type { ColorRaceGameState, PlayerAnswer } from '@shared/types';
 
 // =============================================================================
 // TYPES
@@ -62,7 +68,7 @@ export function initializeGameHandlers(io: Server): void {
 /**
  * Attempt to auto-reconnect player from session cookie
  */
-function handleAutoReconnect(io: Server, socket: SocketWithSession): void {
+function handleAutoReconnect(_io: Server, socket: SocketWithSession): void {
   try {
     const cookieHeader = socket.request.headers.cookie;
     if (!cookieHeader) return;
@@ -249,12 +255,62 @@ function registerPlatformHandlers(io: Server, socket: SocketWithSession): void {
 // GAME EVENT HANDLERS (Color Race)
 // =============================================================================
 
+// Track round answers for each game
+const roundAnswers = new Map<string, PlayerAnswer[]>();
+
 /**
  * Register game-specific event handlers
  */
 function registerGameHandlers(io: Server, socket: SocketWithSession): void {
-  // Color Race handlers will be added here
-  // For now, this is a placeholder
+  /**
+   * Color Race: Submit answer
+   */
+  socket.on('color_race:submit_answer', (data: { gameCode: string; playerId: string; color: import('@shared/types').Color }) => {
+    try {
+      const { gameCode, playerId, color } = data;
+      
+      // Verify room exists
+      const room = gameService.getRoom(gameCode);
+      if (!room || room.status !== 'active') {
+        return;
+      }
+      
+      // Get game state
+      const gameState = room.gameState as any;
+      if (!gameState || gameState.gameType !== 'color_race') {
+        return;
+      }
+      
+      // Check if player already answered this round
+      const answers = roundAnswers.get(gameCode) || [];
+      if (answers.some(a => a.playerId === playerId)) {
+        return; // Already answered
+      }
+      
+      // Record answer with server timestamp
+      const answer = {
+        playerId,
+        color,
+        timestamp: Date.now(),
+      };
+      
+      answers.push(answer);
+      roundAnswers.set(gameCode, answers);
+      
+      // Check if all connected players have answered
+      const connectedPlayers = room.players.filter(p => p.connected);
+      
+      if (answers.length >= connectedPlayers.length) {
+        // Process round
+        processColorRaceRound(io, gameCode, room, gameState, answers);
+        
+        // Clear answers for next round
+        roundAnswers.set(gameCode, []);
+      }
+    } catch (error) {
+      console.error('❌ color_race:submit_answer error:', error);
+    }
+  });
 }
 
 // =============================================================================
@@ -278,14 +334,83 @@ function startCountdown(io: Server, gameCode: string): void {
       // Update status to active
       gameService.updateRoomStatus(gameCode, 'active');
       
-      // Emit game started event
-      io.to(gameCode).emit('game_started');
-      
-      console.log(`🎮 Game started in room: ${gameCode}`);
+      // Initialize Color Race game
+      const room = gameService.getRoom(gameCode);
+      if (room) {
+        const gameState = initializeColorRaceGame(room.players);
+        gameService.updateGameState(gameCode, gameState);
+        
+        // Start first round
+        io.to(gameCode).emit('color_race:new_round', {
+          round: gameState.round,
+          color: gameState.currentColor,
+          totalRounds: gameState.totalRounds,
+        });
+        
+        console.log(`🎮 Color Race started in room: ${gameCode}`);
+      }
     }
     
     count--;
   }, 1000);
+}
+
+// =============================================================================
+// COLOR RACE GAME LOGIC
+// =============================================================================
+
+/**
+ * Process a Color Race round
+ */
+function processColorRaceRound(
+  io: Server,
+  gameCode: string,
+  room: any,
+  gameState: ColorRaceGameState,
+  answers: PlayerAnswer[]
+): void {
+  // Process the round
+  const newState = processRound(gameState, answers);
+  
+  // Update game state
+  gameService.updateGameState(gameCode, newState);
+  
+  // Get winner info for this round
+  const roundWinner = room.players.find((p: Player) => p.id === newState.roundWinner);
+  
+  // Broadcast round result
+  io.to(gameCode).emit('color_race:round_result', {
+    winnerId: newState.roundWinner,
+    winnerName: roundWinner?.displayName || null,
+    scores: newState.scores,
+  });
+  
+  // Check if game finished
+  if (newState.phase === 'finished') {
+    const winner = determineWinner(newState);
+    const winnerPlayer = room.players.find((p: Player) => p.id === winner?.winnerId);
+    
+    io.to(gameCode).emit('color_race:game_finished', {
+      winnerId: winner!.winnerId,
+      winnerName: winnerPlayer!.displayName,
+      finalScores: newState.scores,
+    });
+    
+    gameService.updateRoomStatus(gameCode, 'finished');
+    console.log(`🏆 Color Race finished in room ${gameCode} - Winner: ${winnerPlayer?.displayName}`);
+  } else {
+    // Start next round after delay
+    setTimeout(() => {
+      const currentRoom = gameService.getRoom(gameCode);
+      if (currentRoom && currentRoom.status === 'active') {
+        io.to(gameCode).emit('color_race:new_round', {
+          round: newState.round,
+          color: newState.currentColor,
+          totalRounds: newState.totalRounds,
+        });
+      }
+    }, COLOR_RACE_CONSTANTS.ROUND_RESULT_DELAY_MS);
+  }
 }
 
 // =============================================================================
