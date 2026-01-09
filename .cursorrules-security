@@ -1,0 +1,582 @@
+# Security Best Practices & Standards
+
+## Core Security Principles
+
+1. **Never Trust User Input** - Validate and sanitize everything
+2. **Least Privilege** - Grant minimum permissions necessary
+3. **Defense in Depth** - Multiple layers of security
+4. **Secure by Default** - Security should be the default, not opt-in
+5. **Fail Securely** - Errors should not leak sensitive information
+
+## Authentication
+
+### Session-Based Authentication (Recommended)
+
+```typescript
+// Generate JWT token
+function generateToken(userId: string): string {
+  return jwt.sign(
+    { userId, type: 'session' },
+    process.env.JWT_SECRET!,
+    { expiresIn: '30d' }
+  );
+}
+
+// Set HTTP-only cookie
+function setAuthCookie(res: Response, token: string) {
+  res.cookie('session_token', token, {
+    httpOnly: true,      // No JavaScript access (XSS protection)
+    secure: true,        // HTTPS only
+    sameSite: 'strict',  // CSRF protection
+    maxAge: 30 * 24 * 60 * 60 * 1000  // 30 days
+  });
+}
+
+// Authentication middleware
+function authMiddleware(req, res, next) {
+  const token = req.cookies.session_token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+```
+
+### Password Security
+
+```typescript
+import bcrypt from 'bcrypt';
+
+// Hash password
+async function hashPassword(password: string): Promise<string> {
+  const saltRounds = 12; // Adjust based on security needs
+  return bcrypt.hash(password, saltRounds);
+}
+
+// Verify password
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
+}
+```
+
+### Password Requirements
+- Minimum 8 characters
+- At least 1 uppercase letter
+- At least 1 lowercase letter
+- At least 1 number
+- At least 1 special character (recommended)
+- No common passwords (use a password blacklist)
+
+## Input Validation
+
+### Use Zod for Schema Validation
+
+```typescript
+import { z } from 'zod';
+
+const UserSchema = z.object({
+  email: z.string()
+    .email('Invalid email format')
+    .max(100, 'Email too long')
+    .toLowerCase()
+    .trim(),
+  
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain uppercase letter')
+    .regex(/[a-z]/, 'Must contain lowercase letter')
+    .regex(/[0-9]/, 'Must contain number'),
+  
+  name: z.string()
+    .min(2, 'Name too short')
+    .max(50, 'Name too long')
+    .regex(/^[a-zA-Z\s-]+$/, 'Invalid characters')
+    .trim(),
+  
+  age: z.number()
+    .int('Must be integer')
+    .min(13, 'Must be 13 or older')
+    .max(120, 'Invalid age')
+    .optional()
+});
+
+// Validate in endpoint
+app.post('/api/users', async (req, res) => {
+  try {
+    const data = UserSchema.parse(req.body);
+    // Process validated data
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: error.errors
+      });
+    }
+    throw error;
+  }
+});
+```
+
+### Sanitize HTML Input
+
+```typescript
+import sanitizeHtml from 'sanitize-html';
+
+function sanitizeUserInput(input: string): string {
+  return sanitizeHtml(input, {
+    allowedTags: [], // No HTML tags allowed
+    allowedAttributes: {}
+  });
+}
+
+// For rich text (if needed)
+function sanitizeRichText(input: string): string {
+  return sanitizeHtml(input, {
+    allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br'],
+    allowedAttributes: {}
+  });
+}
+```
+
+## Rate Limiting
+
+### API Rate Limiting
+
+```typescript
+import rateLimit from 'express-rate-limit';
+
+// General API rate limit
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Max 100 requests per window
+  message: 'Too many requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Rate limit exceeded',
+      retryAfter: req.rateLimit.resetTime
+    });
+  }
+});
+
+// Stricter for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // Max 5 attempts per hour
+  skipSuccessfulRequests: true, // Don't count successful logins
+  message: 'Too many login attempts, try again later'
+});
+
+app.use('/api/', apiLimiter);
+app.post('/api/auth/login', authLimiter, loginHandler);
+```
+
+### WebSocket Rate Limiting
+
+```typescript
+const socketRateLimits = new Map<string, number[]>();
+
+io.on('connection', (socket) => {
+  socket.on('message', (data) => {
+    const userId = socket.userId;
+    const now = Date.now();
+    
+    if (!socketRateLimits.has(userId)) {
+      socketRateLimits.set(userId, []);
+    }
+    
+    const attempts = socketRateLimits.get(userId)!;
+    const recentAttempts = attempts.filter(t => now - t < 10000); // Last 10 seconds
+    
+    if (recentAttempts.length >= 20) {
+      socket.emit('error', { message: 'Rate limit exceeded' });
+      return;
+    }
+    
+    recentAttempts.push(now);
+    socketRateLimits.set(userId, recentAttempts);
+    
+    // Process message
+  });
+});
+```
+
+## SQL Injection Prevention
+
+### Use Parameterized Queries
+
+```typescript
+// ❌ NEVER DO THIS - Vulnerable to SQL injection
+const userId = req.params.id;
+const query = `SELECT * FROM users WHERE id = '${userId}'`;
+db.query(query);
+
+// ✅ USE PARAMETERIZED QUERIES
+const userId = req.params.id;
+db.query('SELECT * FROM users WHERE id = $1', [userId]);
+```
+
+### Use an ORM
+
+```typescript
+// Prisma (recommended)
+const user = await prisma.user.findUnique({
+  where: { id: userId }
+});
+
+// TypeORM
+const user = await userRepository.findOne({
+  where: { id: userId }
+});
+```
+
+## XSS Prevention
+
+### Content Security Policy (CSP)
+
+```typescript
+import helmet from 'helmet';
+
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"], // Avoid 'unsafe-inline' if possible
+    imgSrc: ["'self'", "data:", "https:"],
+    connectSrc: ["'self'", process.env.API_URL],
+    fontSrc: ["'self'"],
+    objectSrc: ["'none'"],
+    mediaSrc: ["'self'"],
+    frameSrc: ["'none'"]
+  }
+}));
+```
+
+### Escape Output
+
+```typescript
+// In React/Vue, this is automatic
+<div>{userInput}</div> // Safe by default
+
+// In plain HTML, escape manually
+function escapeHtml(text: string): string {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+```
+
+## CSRF Protection
+
+### SameSite Cookies (Primary Defense)
+
+```typescript
+res.cookie('session_token', token, {
+  sameSite: 'strict', // or 'lax' for cross-site navigation
+  // ... other options
+});
+```
+
+### CSRF Tokens (Additional Layer)
+
+```typescript
+import csrf from 'csurf';
+
+const csrfProtection = csrf({ 
+  cookie: { 
+    httpOnly: true, 
+    secure: true,
+    sameSite: 'strict'
+  } 
+});
+
+app.use(csrfProtection);
+
+// Send token to client
+app.get('/form', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+// Verify on POST
+app.post('/submit', csrfProtection, (req, res) => {
+  // CSRF token is automatically verified
+});
+```
+
+## CORS Configuration
+
+```typescript
+import cors from 'cors';
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true, // Allow cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400 // 24 hours
+}));
+```
+
+## Security Headers
+
+### Use Helmet.js
+
+```typescript
+import helmet from 'helmet';
+
+app.use(helmet({
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true
+  },
+  frameguard: { action: 'deny' }, // Prevent clickjacking
+  xssFilter: true,
+  noSniff: true, // Prevent MIME type sniffing
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
+```
+
+## Secrets Management
+
+### Environment Variables
+
+```bash
+# .env (NEVER commit to version control)
+JWT_SECRET=your-256-bit-secret-here-use-crypto.randomBytes(32).toString('hex')
+DATABASE_URL=postgresql://user:pass@localhost:5432/db
+API_KEY=your-api-key
+ENCRYPTION_KEY=your-encryption-key
+
+# Add to .gitignore
+.env
+.env.local
+.env.production
+.env.*.local
+```
+
+### Validate Secrets on Startup
+
+```typescript
+function validateEnvironment() {
+  const required = [
+    'JWT_SECRET',
+    'DATABASE_URL',
+    'API_KEY'
+  ];
+  
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+  }
+  
+  // Validate secret strength
+  if (process.env.JWT_SECRET!.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters');
+  }
+}
+
+validateEnvironment();
+```
+
+## Error Handling
+
+### Don't Leak Sensitive Information
+
+```typescript
+// ❌ BAD - Leaks implementation details
+app.use((err, req, res, next) => {
+  res.status(500).json({
+    error: err.message,
+    stack: err.stack, // NEVER send stack traces to client
+    query: req.query  // May contain sensitive data
+  });
+});
+
+// ✅ GOOD - Generic error message
+app.use((err, req, res, next) => {
+  // Log full error server-side
+  logger.error('Unexpected error', {
+    error: err,
+    userId: req.userId,
+    path: req.path,
+    method: req.method
+  });
+  
+  // Send generic message to client
+  res.status(500).json({
+    error: 'Internal server error',
+    // Only in development
+    ...(process.env.NODE_ENV === 'development' && { 
+      message: err.message 
+    })
+  });
+});
+```
+
+## Data Protection
+
+### Encrypt Sensitive Data
+
+```typescript
+import crypto from 'crypto';
+
+const algorithm = 'aes-256-gcm';
+const key = Buffer.from(process.env.ENCRYPTION_KEY!, 'hex');
+
+function encrypt(text: string): { encrypted: string; iv: string; tag: string } {
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(algorithm, key, iv);
+  
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  const tag = cipher.getAuthTag();
+  
+  return {
+    encrypted,
+    iv: iv.toString('hex'),
+    tag: tag.toString('hex')
+  };
+}
+
+function decrypt(encrypted: string, ivHex: string, tagHex: string): string {
+  const iv = Buffer.from(ivHex, 'hex');
+  const tag = Buffer.from(tagHex, 'hex');
+  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  
+  decipher.setAuthTag(tag);
+  
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  
+  return decrypted;
+}
+```
+
+### Hash Sensitive Data (One-Way)
+
+```typescript
+import crypto from 'crypto';
+
+function hashData(data: string): string {
+  return crypto
+    .createHash('sha256')
+    .update(data)
+    .digest('hex');
+}
+```
+
+## Logging & Monitoring
+
+### Security Event Logging
+
+```typescript
+import winston from 'winston';
+
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'security.log', level: 'warn' }),
+    new winston.transports.File({ filename: 'combined.log' })
+  ]
+});
+
+// Log security events
+logger.warn('Failed login attempt', {
+  userId: req.body.email,
+  ip: req.ip,
+  timestamp: new Date(),
+  userAgent: req.headers['user-agent']
+});
+
+logger.warn('Rate limit exceeded', {
+  ip: req.ip,
+  endpoint: req.path,
+  timestamp: new Date()
+});
+```
+
+## Security Checklist
+
+- [ ] **Authentication**
+  - [ ] JWT tokens in HTTP-only cookies
+  - [ ] Secure password hashing (bcrypt, saltRounds >= 12)
+  - [ ] Session expiration implemented
+  - [ ] Refresh token rotation (if using refresh tokens)
+
+- [ ] **Authorization**
+  - [ ] Role-based access control (RBAC)
+  - [ ] Permission checks on all protected endpoints
+  - [ ] Resource ownership validation
+
+- [ ] **Input Validation**
+  - [ ] All inputs validated (Zod or similar)
+  - [ ] SQL injection prevention (parameterized queries/ORM)
+  - [ ] XSS prevention (sanitization + CSP)
+  - [ ] File upload validation (type, size, content)
+
+- [ ] **Rate Limiting**
+  - [ ] API rate limiting configured
+  - [ ] Auth endpoints have stricter limits
+  - [ ] WebSocket rate limiting implemented
+
+- [ ] **Security Headers**
+  - [ ] Helmet.js configured
+  - [ ] HSTS enabled
+  - [ ] CSP configured
+  - [ ] X-Frame-Options set
+  - [ ] X-Content-Type-Options set
+
+- [ ] **HTTPS**
+  - [ ] SSL certificate valid
+  - [ ] HTTP redirects to HTTPS
+  - [ ] Secure flag on cookies
+
+- [ ] **Secrets**
+  - [ ] All secrets in environment variables
+  - [ ] .env in .gitignore
+  - [ ] Secrets validated on startup
+  - [ ] No secrets in logs
+
+- [ ] **Error Handling**
+  - [ ] Generic error messages to client
+  - [ ] Detailed errors logged server-side
+  - [ ] No stack traces exposed
+
+- [ ] **Dependencies**
+  - [ ] Regular npm audit
+  - [ ] Automatic security updates
+  - [ ] Minimal dependencies
+
+- [ ] **Monitoring**
+  - [ ] Security events logged
+  - [ ] Failed auth attempts monitored
+  - [ ] Anomaly detection alerts
+
+## Resources
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [Node.js Security Best Practices](https://nodejs.org/en/docs/guides/security/)
+- [Express Security Best Practices](https://expressjs.com/en/advanced/best-practice-security.html)
+
+---
+
+**Security is not optional. It's foundational.**
+

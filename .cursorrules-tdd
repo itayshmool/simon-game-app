@@ -1,0 +1,226 @@
+# Test-Driven Development (TDD) Rules
+
+## Core Directive
+All business logic MUST use Test-Driven Development. No exceptions.
+
+## The Red-Green-Refactor Cycle
+
+### 1. 🔴 RED: Write a Failing Test
+- Write the smallest possible test that describes the next piece of functionality
+- Confirm the test FAILS (if it passes without implementation, the test is wrong)
+- Test should fail for the RIGHT reason (not syntax errors)
+
+### 2. ✅ GREEN: Write Minimal Implementation
+- Write the MINIMUM code needed to make the test pass
+- Don't think about future requirements
+- Hardcoded values are OK at this stage
+- Goal: Make the test pass as quickly as possible
+
+### 3. 🔄 REFACTOR: Clean Up
+- Improve code quality while keeping tests green
+- Extract duplications
+- Improve naming
+- Optimize structure
+- Tests must still pass after refactoring
+
+## Workflow for Cursor AI
+
+When asked to implement a feature:
+
+1. **Identify atomic logic pieces** required
+2. **Write the test file first** (`*.test.ts` or `*.test.js`)
+3. **Run the test** and confirm it fails (Red)
+4. **Implement the logic** in the source file
+5. **Run the test** and confirm it passes (Green)
+6. **Refactor** if necessary while keeping tests green
+
+## Mandatory Rules
+
+- ❌ **NEVER** write implementation code without a failing test first
+- ❌ **NEVER** skip the red phase
+- ❌ **NEVER** say "I'll write tests later"
+- ✅ **ALWAYS** write test before implementation
+- ✅ **ALWAYS** confirm test fails before implementing
+- ✅ **ALWAYS** keep tests green during refactoring
+
+## When to Apply TDD
+
+| Code Type | TDD Required? | Reason |
+|-----------|--------------|---------|
+| Business logic | ✅ YES | Critical, complex, error-prone |
+| Utility functions | ✅ YES | Reusable, needs reliability |
+| API endpoints | ✅ YES | Contract validation required |
+| Data transformations | ✅ YES | Edge cases common |
+| UI components | ⚠️ PARTIAL | Test logic, skip visual styling |
+| Configuration files | ❌ NO | Static, no logic |
+| Build scripts | ⚠️ OPTIONAL | Low complexity |
+
+## Test Naming Convention
+
+```typescript
+describe('FeatureName or FunctionName', () => {
+  it('should [expected behavior] when [condition]', () => {
+    // Test implementation
+  });
+});
+```
+
+Examples:
+```typescript
+describe('validateEmail', () => {
+  it('should return true when email format is valid', () => {});
+  it('should return false when email has no @ symbol', () => {});
+  it('should return false when email is null or empty', () => {});
+});
+```
+
+## Code Coverage Targets
+
+- **Overall**: 70% minimum
+- **Business logic**: 90%+ (critical paths)
+- **Utilities**: 90%+
+- **UI components**: 60% (logic only, not styling)
+
+## Testing Tools
+
+### Frontend (Choose based on framework)
+- **React/Vite**: Vitest + React Testing Library
+- **Vue**: Vitest + Vue Testing Library
+- **Angular**: Jasmine/Karma or Jest
+
+### Backend
+- **Node.js**: Jest + Supertest (API tests)
+- **Python**: pytest
+- **Go**: built-in testing package
+- **Java**: JUnit
+
+## Example TDD Session
+
+```typescript
+// STEP 1: Write failing test (RED)
+describe('calculateDiscount', () => {
+  it('should return 10% discount for orders over $100', () => {
+    expect(calculateDiscount(150)).toBe(15);
+  });
+});
+
+// Run test: ❌ FAILS (function doesn't exist)
+
+// STEP 2: Minimal implementation (GREEN)
+function calculateDiscount(amount: number): number {
+  if (amount > 100) return amount * 0.1;
+  return 0;
+}
+
+// Run test: ✅ PASSES
+
+// STEP 3: Add more test cases
+it('should return 0 discount for orders under $100', () => {
+  expect(calculateDiscount(50)).toBe(0);
+});
+
+it('should return 20% discount for orders over $500', () => {
+  expect(calculateDiscount(600)).toBe(120);
+});
+
+// Run test: ❌ FAILS (last test)
+
+// STEP 4: Update implementation
+function calculateDiscount(amount: number): number {
+  if (amount > 500) return amount * 0.2;
+  if (amount > 100) return amount * 0.1;
+  return 0;
+}
+
+// Run test: ✅ ALL PASS
+
+// STEP 5: Refactor
+const DISCOUNT_TIERS = [
+  { threshold: 500, rate: 0.2 },
+  { threshold: 100, rate: 0.1 }
+];
+
+function calculateDiscount(amount: number): number {
+  const tier = DISCOUNT_TIERS.find(t => amount > t.threshold);
+  return tier ? amount * tier.rate : 0;
+}
+
+// Run test: ✅ ALL STILL PASS
+```
+
+## Benefits of This Approach
+
+1. **Catch bugs before they exist**: Tests written first catch logic errors immediately
+2. **Better design**: Writing tests first forces you to think about API design
+3. **Living documentation**: Tests serve as examples of how to use the code
+4. **Confidence in refactoring**: Green tests mean refactoring is safe
+5. **Faster debugging**: When a test fails, you know exactly what broke
+
+## Common Mistakes to Avoid
+
+### ❌ Writing Tests After Implementation
+```typescript
+// BAD: Implementation first
+function complexLogic() { /* 100 lines */ }
+
+// Then writing tests
+it('should work', () => { /* trying to figure out what to test */ });
+```
+
+### ✅ Tests First
+```typescript
+// GOOD: Test first
+it('should calculate total with tax', () => {
+  expect(calculateTotal(100, 0.1)).toBe(110);
+});
+
+// Then minimal implementation
+function calculateTotal(amount: number, tax: number): number {
+  return amount + (amount * tax);
+}
+```
+
+### ❌ Testing Implementation Details
+```typescript
+// BAD: Testing internal implementation
+it('should call private method validateInput', () => {
+  spyOn(service, 'validateInput'); // Testing HOW
+});
+```
+
+### ✅ Testing Behavior
+```typescript
+// GOOD: Testing behavior/output
+it('should throw error when input is invalid', () => {
+  expect(() => service.process(null)).toThrow('Invalid input'); // Testing WHAT
+});
+```
+
+## Integration with CI/CD
+
+```yaml
+# Ensure tests run on every commit
+- name: Run tests
+  run: npm test
+  
+- name: Check coverage
+  run: npm run test:coverage
+  
+- name: Fail if coverage below threshold
+  run: |
+    if [ $(coverage-percentage) -lt 70 ]; then
+      echo "Coverage below 70%"
+      exit 1
+    fi
+```
+
+## Remember
+
+> **"Code without tests is broken by design."** - Jacob Kaplan-Moss
+
+> **"If it's worth building, it's worth testing. If it's not worth testing, why are you wasting your time working on it?"** - Scott Ambler
+
+---
+
+**This is not negotiable. Tests first, always.**
+

@@ -1,0 +1,626 @@
+# Software Architecture Patterns & Principles
+
+## Core Architectural Principles
+
+1. **Separation of Concerns** - Each module handles one responsibility
+2. **Dependency Inversion** - Depend on abstractions, not implementations
+3. **Single Responsibility** - Each class/function does one thing well
+4. **Open/Closed Principle** - Open for extension, closed for modification
+5. **Don't Repeat Yourself (DRY)** - Avoid duplication
+6. **YAGNI** - You Aren't Gonna Need It (don't over-engineer)
+
+## Layered Architecture
+
+```
+┌─────────────────────────────────────┐
+│       Presentation Layer            │  UI Components, Pages, Routes
+│  (React, Vue, Angular, etc.)        │  • User interactions
+│                                     │  • Display logic only
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│      Application Layer              │  Services, Use Cases, Controllers
+│  (Business Logic Orchestration)     │  • Coordinate domain logic
+│                                     │  • Handle application workflows
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│         Domain Layer                │  Core Business Logic
+│  (Models, Entities, Value Objects)  │  • Business rules
+│                                     │  • Domain models
+│                                     │  • Framework-independent
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│     Infrastructure Layer            │  External Services
+│  (Database, APIs, File System)      │  • Data persistence
+│                                     │  • External integrations
+│                                     │  • Technical implementations
+└─────────────────────────────────────┘
+```
+
+## Project Structure
+
+### Backend (Node.js/TypeScript)
+
+```
+src/
+├── controllers/          # HTTP request handlers
+│   ├── authController.ts
+│   └── userController.ts
+│
+├── services/            # Business logic
+│   ├── authService.ts
+│   └── userService.ts
+│
+├── repositories/        # Data access layer
+│   ├── userRepository.ts
+│   └── postRepository.ts
+│
+├── models/              # Domain models/entities
+│   ├── User.ts
+│   └── Post.ts
+│
+├── middleware/          # Express middleware
+│   ├── auth.ts
+│   └── errorHandler.ts
+│
+├── routes/              # API routes
+│   ├── index.ts
+│   ├── authRoutes.ts
+│   └── userRoutes.ts
+│
+├── utils/               # Helper functions
+│   ├── validation.ts
+│   └── encryption.ts
+│
+├── types/               # TypeScript types/interfaces
+│   └── index.ts
+│
+├── config/              # Configuration
+│   ├── database.ts
+│   └── redis.ts
+│
+└── index.ts             # Application entry point
+```
+
+### Frontend (React/TypeScript)
+
+```
+src/
+├── components/          # Reusable UI components
+│   ├── Button/
+│   │   ├── Button.tsx
+│   │   ├── Button.test.tsx
+│   │   └── Button.module.css
+│   └── Input/
+│
+├── pages/               # Page components/routes
+│   ├── HomePage.tsx
+│   ├── LoginPage.tsx
+│   └── DashboardPage.tsx
+│
+├── hooks/               # Custom React hooks
+│   ├── useAuth.ts
+│   └── useApi.ts
+│
+├── services/            # API clients
+│   ├── authService.ts
+│   └── apiClient.ts
+│
+├── store/               # State management (Zustand, Redux, etc.)
+│   ├── authStore.ts
+│   └── userStore.ts
+│
+├── utils/               # Helper functions
+│   ├── formatters.ts
+│   └── validators.ts
+│
+├── types/               # TypeScript types
+│   └── index.ts
+│
+├── constants/           # Constants
+│   └── index.ts
+│
+└── App.tsx              # Root component
+```
+
+## Dependency Injection
+
+### Problem: Tight Coupling
+
+```typescript
+// ❌ BAD: Hard-coded dependencies
+class UserService {
+  private db = new PostgresDatabase('connection-string');
+  private cache = new RedisCache('redis-url');
+  
+  async getUser(id: string) {
+    // Hard to test, tightly coupled
+    return this.db.query('SELECT * FROM users WHERE id = $1', [id]);
+  }
+}
+```
+
+### Solution: Inject Dependencies
+
+```typescript
+// ✅ GOOD: Dependencies injected
+interface Database {
+  query(sql: string, params: any[]): Promise<any>;
+}
+
+interface Cache {
+  get(key: string): Promise<any>;
+  set(key: string, value: any): Promise<void>;
+}
+
+class UserService {
+  constructor(
+    private db: Database,
+    private cache: Cache
+  ) {}
+  
+  async getUser(id: string) {
+    // Check cache first
+    const cached = await this.cache.get(`user:${id}`);
+    if (cached) return cached;
+    
+    // Query database
+    const user = await this.db.query(
+      'SELECT * FROM users WHERE id = $1',
+      [id]
+    );
+    
+    // Cache result
+    await this.cache.set(`user:${id}`, user);
+    return user;
+  }
+}
+
+// Easy to test with mocks
+const mockDb = { query: jest.fn() };
+const mockCache = { get: jest.fn(), set: jest.fn() };
+const service = new UserService(mockDb, mockCache);
+```
+
+## Repository Pattern
+
+### Abstraction Over Data Access
+
+```typescript
+// Repository interface
+interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  create(data: CreateUserDto): Promise<User>;
+  update(id: string, data: UpdateUserDto): Promise<User>;
+  delete(id: string): Promise<void>;
+}
+
+// PostgreSQL implementation
+class PostgresUserRepository implements UserRepository {
+  constructor(private db: Database) {}
+  
+  async findById(id: string): Promise<User | null> {
+    const result = await this.db.query(
+      'SELECT * FROM users WHERE id = $1',
+      [id]
+    );
+    return result.rows[0] || null;
+  }
+  
+  async findByEmail(email: string): Promise<User | null> {
+    const result = await this.db.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    );
+    return result.rows[0] || null;
+  }
+  
+  async create(data: CreateUserDto): Promise<User> {
+    const result = await this.db.query(
+      'INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *',
+      [data.email, data.name]
+    );
+    return result.rows[0];
+  }
+  
+  // ... other methods
+}
+
+// Service uses repository (not direct database access)
+class UserService {
+  constructor(private userRepo: UserRepository) {}
+  
+  async getUser(id: string) {
+    return this.userRepo.findById(id);
+  }
+  
+  async createUser(data: CreateUserDto) {
+    // Business logic
+    const existing = await this.userRepo.findByEmail(data.email);
+    if (existing) {
+      throw new Error('Email already exists');
+    }
+    
+    return this.userRepo.create(data);
+  }
+}
+```
+
+## Error Handling Architecture
+
+### Custom Error Classes
+
+```typescript
+class ApplicationError extends Error {
+  constructor(
+    public message: string,
+    public statusCode: number = 500,
+    public isOperational: boolean = true
+  ) {
+    super(message);
+    this.name = this.constructor.name;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+class ValidationError extends ApplicationError {
+  constructor(message: string, public details?: any) {
+    super(message, 400);
+  }
+}
+
+class NotFoundError extends ApplicationError {
+  constructor(resource: string) {
+    super(`${resource} not found`, 404);
+  }
+}
+
+class UnauthorizedError extends ApplicationError {
+  constructor(message: string = 'Unauthorized') {
+    super(message, 401);
+  }
+}
+
+class ForbiddenError extends ApplicationError {
+  constructor(message: string = 'Forbidden') {
+    super(message, 403);
+  }
+}
+```
+
+### Centralized Error Handler
+
+```typescript
+function errorHandler(
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  // Log error
+  logger.error('Error occurred', {
+    error: err,
+    url: req.url,
+    method: req.method,
+    userId: req.userId
+  });
+  
+  // Handle known errors
+  if (err instanceof ApplicationError) {
+    return res.status(err.statusCode).json({
+      error: err.message,
+      ...(err instanceof ValidationError && { details: err.details }),
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+  }
+  
+  // Handle unknown errors (don't leak details)
+  res.status(500).json({
+    error: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { 
+      message: err.message,
+      stack: err.stack 
+    })
+  });
+}
+
+app.use(errorHandler);
+```
+
+## Service Layer Pattern
+
+```typescript
+// Service orchestrates business logic
+class OrderService {
+  constructor(
+    private orderRepo: OrderRepository,
+    private inventoryService: InventoryService,
+    private paymentService: PaymentService,
+    private notificationService: NotificationService
+  ) {}
+  
+  async createOrder(data: CreateOrderDto): Promise<Order> {
+    // 1. Validate inventory
+    const available = await this.inventoryService.checkAvailability(
+      data.items
+    );
+    if (!available) {
+      throw new ValidationError('Items not available');
+    }
+    
+    // 2. Process payment
+    const payment = await this.paymentService.charge(
+      data.userId,
+      data.total
+    );
+    if (!payment.success) {
+      throw new PaymentError('Payment failed');
+    }
+    
+    // 3. Create order
+    const order = await this.orderRepo.create({
+      ...data,
+      paymentId: payment.id,
+      status: 'confirmed'
+    });
+    
+    // 4. Update inventory
+    await this.inventoryService.deduct(data.items);
+    
+    // 5. Send notification
+    await this.notificationService.sendOrderConfirmation(order);
+    
+    return order;
+  }
+}
+```
+
+## API Response Format
+
+### Consistent Response Structure
+
+```typescript
+// Success response
+interface SuccessResponse<T> {
+  success: true;
+  data: T;
+  message?: string;
+}
+
+// Error response
+interface ErrorResponse {
+  success: false;
+  error: string;
+  details?: any;
+}
+
+// Helper functions
+function successResponse<T>(data: T, message?: string): SuccessResponse<T> {
+  return {
+    success: true,
+    data,
+    ...(message && { message })
+  };
+}
+
+function errorResponse(error: string, details?: any): ErrorResponse {
+  return {
+    success: false,
+    error,
+    ...(details && { details })
+  };
+}
+
+// Usage in controllers
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await userService.getUser(req.params.id);
+    res.json(successResponse(user));
+  } catch (error) {
+    res.status(500).json(errorResponse('Failed to fetch user'));
+  }
+});
+```
+
+## Event-Driven Architecture
+
+### Event Emitter Pattern
+
+```typescript
+import { EventEmitter } from 'events';
+
+class OrderEvents extends EventEmitter {
+  emitOrderCreated(order: Order) {
+    this.emit('order:created', order);
+  }
+  
+  emitOrderCancelled(order: Order) {
+    this.emit('order:cancelled', order);
+  }
+  
+  onOrderCreated(handler: (order: Order) => void) {
+    this.on('order:created', handler);
+  }
+  
+  onOrderCancelled(handler: (order: Order) => void) {
+    this.on('order:cancelled', handler);
+  }
+}
+
+const orderEvents = new OrderEvents();
+
+// Emit events
+orderEvents.emitOrderCreated(order);
+
+// Listen to events
+orderEvents.onOrderCreated(async (order) => {
+  await emailService.sendOrderConfirmation(order);
+  await analyticsService.trackOrder(order);
+});
+```
+
+## Middleware Pattern
+
+### Composable Request Processing
+
+```typescript
+// Authentication middleware
+const authMiddleware = (req, res, next) => {
+  const token = req.cookies.session_token;
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Authorization middleware
+const requireRole = (...roles: string[]) => {
+  return async (req, res, next) => {
+    const user = await userService.getUser(req.userId);
+    
+    if (!roles.includes(user.role)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    
+    next();
+  };
+};
+
+// Validation middleware
+const validate = (schema: z.ZodSchema) => {
+  return (req, res, next) => {
+    try {
+      req.body = schema.parse(req.body);
+      next();
+    } catch (error) {
+      res.status(400).json({ error: 'Validation failed', details: error });
+    }
+  };
+};
+
+// Usage
+app.post(
+  '/api/admin/users',
+  authMiddleware,
+  requireRole('admin'),
+  validate(CreateUserSchema),
+  createUserHandler
+);
+```
+
+## Caching Strategy
+
+### Multi-Layer Cache
+
+```typescript
+class CacheService {
+  constructor(
+    private redis: Redis,
+    private memoryCache: Map<string, any>
+  ) {}
+  
+  async get<T>(key: string): Promise<T | null> {
+    // 1. Check memory cache (fastest)
+    if (this.memoryCache.has(key)) {
+      return this.memoryCache.get(key);
+    }
+    
+    // 2. Check Redis cache
+    const cached = await this.redis.get(key);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // Store in memory for next time
+      this.memoryCache.set(key, parsed);
+      return parsed;
+    }
+    
+    return null;
+  }
+  
+  async set(key: string, value: any, ttl: number = 300) {
+    // Store in both caches
+    this.memoryCache.set(key, value);
+    await this.redis.setex(key, ttl, JSON.stringify(value));
+  }
+  
+  async invalidate(key: string) {
+    this.memoryCache.delete(key);
+    await this.redis.del(key);
+  }
+}
+```
+
+## Configuration Management
+
+```typescript
+// config/index.ts
+interface Config {
+  env: 'development' | 'staging' | 'production';
+  port: number;
+  database: {
+    url: string;
+    poolSize: number;
+  };
+  redis: {
+    url: string;
+  };
+  jwt: {
+    secret: string;
+    expiresIn: string;
+  };
+  cors: {
+    origin: string;
+  };
+}
+
+function loadConfig(): Config {
+  const required = ['DATABASE_URL', 'JWT_SECRET', 'REDIS_URL'];
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+  }
+  
+  return {
+    env: (process.env.NODE_ENV as any) || 'development',
+    port: parseInt(process.env.PORT || '3000', 10),
+    database: {
+      url: process.env.DATABASE_URL!,
+      poolSize: parseInt(process.env.DB_POOL_SIZE || '10', 10)
+    },
+    redis: {
+      url: process.env.REDIS_URL!
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET!,
+      expiresIn: process.env.JWT_EXPIRES_IN || '30d'
+    },
+    cors: {
+      origin: process.env.CORS_ORIGIN || 'http://localhost:3000'
+    }
+  };
+}
+
+export const config = loadConfig();
+```
+
+## Remember
+
+> **"Good architecture makes the system easy to understand, develop, maintain, and deploy."** - Robert C. Martin
+
+> **"The only way to go fast, is to go well."** - Uncle Bob
+
+---
+
+**Architecture is about making the right trade-offs for your specific needs.**
+

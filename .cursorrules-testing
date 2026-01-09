@@ -1,0 +1,448 @@
+# Testing Strategy & Standards
+
+## The Testing Pyramid
+
+```
+           ╱╲
+          ╱  ╲         E2E Tests (5%)
+         ╱____╲        • Slow, expensive, brittle
+        ╱      ╲       • Critical user journeys only
+       ╱        ╲      
+      ╱  Integr. ╲     Integration Tests (25%)
+     ╱____________╲    • API endpoints, service interactions
+    ╱              ╲   • Database + cache + external APIs
+   ╱                ╲  
+  ╱   Unit Tests     ╲ Unit Tests (70%)
+ ╱____________________╲• Fast, isolated, reliable
+                        • Pure functions, utilities, components
+```
+
+## Coverage Targets
+
+- **Overall minimum**: 70%
+- **Critical paths**: 90%+ (auth, payments, core business logic)
+- **Utilities/helpers**: 90%+
+- **UI components**: 60% (focus on logic, not styling)
+- **Configuration**: 0% (static files don't need tests)
+
+## Test Categories
+
+### 1. Unit Tests (70% of test suite)
+
+**What to test:**
+- Pure functions
+- Utility functions
+- Component logic (not visual appearance)
+- Business logic
+- Validators
+- Formatters
+
+**Testing framework:**
+- Frontend: Vitest + Testing Library
+- Backend: Jest
+
+**Example:**
+```typescript
+describe('formatCurrency', () => {
+  it('formats positive numbers with $ and 2 decimals', () => {
+    expect(formatCurrency(123.456)).toBe('$123.46');
+  });
+  
+  it('handles zero', () => {
+    expect(formatCurrency(0)).toBe('$0.00');
+  });
+  
+  it('handles negative numbers', () => {
+    expect(formatCurrency(-50.5)).toBe('-$50.50');
+  });
+});
+```
+
+### 2. Integration Tests (25% of test suite)
+
+**What to test:**
+- API endpoints (full request/response cycle)
+- Database operations
+- External service integrations
+- Multi-component interactions
+- State management with side effects
+
+**Testing framework:**
+- Backend: Jest + Supertest
+- Frontend: Vitest with mock APIs
+
+**Example:**
+```typescript
+describe('POST /api/users', () => {
+  it('creates user and returns 201', async () => {
+    const response = await request(app)
+      .post('/api/users')
+      .send({ email: 'test@example.com', name: 'Test' });
+    
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+    
+    // Verify in database
+    const user = await db.users.findOne({ email: 'test@example.com' });
+    expect(user).toBeDefined();
+  });
+});
+```
+
+### 3. E2E Tests (5% of test suite)
+
+**What to test (ONLY critical paths):**
+- User registration + login
+- Checkout flow (if e-commerce)
+- Payment processing
+- Core user journey (signup → key feature → success)
+
+**Testing framework:**
+- Playwright or Cypress
+
+**Example:**
+```typescript
+test('complete user signup flow', async ({ page }) => {
+  await page.goto('/signup');
+  await page.fill('[name="email"]', 'user@example.com');
+  await page.fill('[name="password"]', 'SecurePass123');
+  await page.click('button[type="submit"]');
+  
+  await expect(page.locator('h1')).toHaveText('Welcome!');
+});
+```
+
+## Test Organization
+
+### File Structure
+```
+src/
+├── utils/
+│   ├── validation.ts
+│   └── validation.test.ts          # Co-located with source
+├── components/
+│   ├── Button.tsx
+│   └── Button.test.tsx
+└── services/
+    ├── userService.ts
+    └── userService.test.ts
+
+tests/
+├── integration/
+│   ├── api/
+│   │   └── users.test.ts
+│   └── database/
+│       └── queries.test.ts
+└── e2e/
+    ├── signup.spec.ts
+    └── checkout.spec.ts
+```
+
+### Naming Conventions
+- Unit tests: `*.test.ts` or `*.spec.ts` (co-located)
+- Integration tests: `tests/integration/**/*.test.ts`
+- E2E tests: `tests/e2e/**/*.spec.ts`
+
+## Test Best Practices
+
+### ✅ DO
+
+1. **Test behavior, not implementation**
+   ```typescript
+   // GOOD
+   it('displays error message when form is invalid', () => {
+     // Test what user sees, not internal state
+   });
+   ```
+
+2. **One assertion per test (ideally)**
+   ```typescript
+   it('validates email format', () => {
+     expect(isValidEmail('test@example.com')).toBe(true);
+   });
+   
+   it('rejects email without @', () => {
+     expect(isValidEmail('invalid')).toBe(false);
+   });
+   ```
+
+3. **Use descriptive test names**
+   ```typescript
+   it('should return 401 when user is not authenticated', () => {});
+   ```
+
+4. **Arrange-Act-Assert pattern**
+   ```typescript
+   it('calculates total with tax', () => {
+     // Arrange
+     const subtotal = 100;
+     const taxRate = 0.1;
+     
+     // Act
+     const total = calculateTotal(subtotal, taxRate);
+     
+     // Assert
+     expect(total).toBe(110);
+   });
+   ```
+
+5. **Test edge cases**
+   ```typescript
+   describe('divide', () => {
+     it('divides positive numbers', () => {});
+     it('divides negative numbers', () => {});
+     it('handles division by zero', () => {});
+     it('handles very large numbers', () => {});
+     it('handles null/undefined', () => {});
+   });
+   ```
+
+### ❌ DON'T
+
+1. **Test framework internals**
+   ```typescript
+   // BAD
+   it('React renders correctly', () => {}); // Testing React, not your code
+   ```
+
+2. **Test third-party libraries**
+   ```typescript
+   // BAD
+   it('lodash.debounce works', () => {}); // Lodash is already tested
+   ```
+
+3. **Write flaky tests**
+   ```typescript
+   // BAD: Depends on timing
+   it('loads data', async () => {
+     loadData();
+     setTimeout(() => expect(data).toBeDefined(), 100); // Flaky!
+   });
+   
+   // GOOD: Wait for completion
+   it('loads data', async () => {
+     await loadData();
+     expect(data).toBeDefined();
+   });
+   ```
+
+4. **Share state between tests**
+   ```typescript
+   // BAD
+   let user; // Shared state
+   it('creates user', () => { user = createUser(); });
+   it('updates user', () => { updateUser(user); }); // Depends on previous test
+   
+   // GOOD: Each test is independent
+   it('creates user', () => {
+     const user = createUser();
+     expect(user).toBeDefined();
+   });
+   
+   it('updates user', () => {
+     const user = createUser(); // Fresh user
+     const updated = updateUser(user);
+     expect(updated).toBeDefined();
+   });
+   ```
+
+## Mocking Strategy
+
+### When to Mock
+- External APIs (don't call real services in tests)
+- Database connections (use in-memory DB or mocks)
+- File system operations
+- Time-dependent functions (Date.now(), etc.)
+- Random number generators
+
+### How to Mock
+
+**Functions:**
+```typescript
+jest.mock('./api', () => ({
+  fetchUser: jest.fn().mockResolvedValue({ id: 1, name: 'Test' })
+}));
+```
+
+**Modules:**
+```typescript
+import { vi } from 'vitest';
+
+vi.mock('axios');
+axios.get.mockResolvedValue({ data: {} });
+```
+
+**Time:**
+```typescript
+jest.useFakeTimers();
+jest.setSystemTime(new Date('2024-01-01'));
+```
+
+## Test Data Management
+
+### Use Factories/Fixtures
+```typescript
+// test/factories/user.ts
+export function createTestUser(overrides = {}) {
+  return {
+    id: 'test-id',
+    email: 'test@example.com',
+    name: 'Test User',
+    createdAt: new Date('2024-01-01'),
+    ...overrides
+  };
+}
+
+// Usage
+it('updates user name', () => {
+  const user = createTestUser({ name: 'Alice' });
+  // Test with consistent data
+});
+```
+
+### Seed Data for Integration Tests
+```typescript
+beforeEach(async () => {
+  await db.seed([
+    { table: 'users', data: testUsers },
+    { table: 'posts', data: testPosts }
+  ]);
+});
+
+afterEach(async () => {
+  await db.truncate(['users', 'posts']);
+});
+```
+
+## Running Tests
+
+### Commands
+```json
+{
+  "scripts": {
+    "test": "vitest",                          // Watch mode
+    "test:run": "vitest run",                  // Run once
+    "test:coverage": "vitest run --coverage",  // With coverage
+    "test:ui": "vitest --ui",                  // Visual UI
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test"
+  }
+}
+```
+
+### CI/CD Integration
+```yaml
+# .github/workflows/test.yml
+- name: Run unit tests
+  run: npm run test:run
+  
+- name: Run integration tests
+  run: npm run test:integration
+  
+- name: Check coverage
+  run: npm run test:coverage
+  
+- name: Upload coverage
+  uses: codecov/codecov-action@v3
+  
+- name: Fail if coverage < 70%
+  run: |
+    if [ $COVERAGE -lt 70 ]; then exit 1; fi
+```
+
+## Coverage Reporting
+
+### Configuration (vitest.config.ts)
+```typescript
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'tests/',
+        '**/*.test.ts',
+        '**/*.config.ts',
+        'dist/'
+      ],
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70
+      }
+    }
+  }
+});
+```
+
+## Deterministic Tests
+
+### Make Random Values Deterministic
+```typescript
+// BAD: Non-deterministic
+it('generates ID', () => {
+  const id = generateRandomId();
+  expect(id).toHaveLength(10); // Could fail if random chars are special
+});
+
+// GOOD: Mock randomness
+it('generates ID', () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0.5);
+  const id = generateRandomId();
+  expect(id).toBe('expected-id');
+});
+```
+
+### Make Time Deterministic
+```typescript
+// BAD: Time-dependent
+it('shows created timestamp', () => {
+  const item = createItem();
+  expect(item.createdAt).toBe(Date.now()); // Will fail due to timing
+});
+
+// GOOD: Mock time
+it('shows created timestamp', () => {
+  vi.setSystemTime(new Date('2024-01-01'));
+  const item = createItem();
+  expect(item.createdAt).toBe(new Date('2024-01-01').getTime());
+});
+```
+
+## Performance Testing
+
+### Test Timeout Configuration
+```typescript
+// Global timeout
+vi.setConfig({ testTimeout: 10000 }); // 10 seconds
+
+// Per-test timeout
+it('slow operation', async () => {
+  // Test
+}, 30000); // 30 seconds
+```
+
+### Measure Performance
+```typescript
+it('completes within performance budget', async () => {
+  const start = performance.now();
+  
+  await complexOperation();
+  
+  const duration = performance.now() - start;
+  expect(duration).toBeLessThan(100); // Must complete in 100ms
+});
+```
+
+## Remember
+
+> **"Tests are the specification written in executable code."**
+
+> **"If you can't test it, you can't maintain it."**
+
+---
+
+**Minimum 70% coverage. No exceptions.**
+
