@@ -42,7 +42,7 @@ git clone https://github.com/itayshmool/simon-game-app-cday.git
 
 ---
 
-## Step 2: Setup and Run
+## Step 2: Setup and Test
 
 In Cursor, open the terminal: Press **Ctrl + `** (backtick key)
 
@@ -52,21 +52,35 @@ In Cursor, open the terminal: Press **Ctrl + `** (backtick key)
 npm run go
 ```
 
-This will install everything and start the app. You should see:
+This will:
+1. ✅ Install all dependencies
+2. ✅ Start the servers
+3. ✅ Test that everything works
+4. ✅ Stop the servers
+5. ✅ Show success message
+
+You should see:
 ```
-🎮 SIMON GAME SERVER
-   🌐 HTTP:      http://localhost:3000
+═══════════════════════════════════════════════════
+   ✅ SETUP COMPLETE - ALL TESTS PASSED!
+═══════════════════════════════════════════════════
 ```
 
-> ✅ **The terminal will keep running** - this is normal! Leave it open and continue to the next step.
->
-> To stop the servers later, press `Ctrl + C` in the terminal.
+### Now Start the App
+
+Run this command to start the servers:
+
+```bash
+npm run dev
+```
 
 ### Open in Browser
 
 Go to: **http://localhost:5173**
 
 🎉 **The game is running!**
+
+> 💡 Leave the terminal running. Press `Ctrl + C` to stop the servers when done.
 
 ---
 

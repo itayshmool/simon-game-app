@@ -5,7 +5,7 @@
   "main": "dist/backend/server.js",
   "scripts": {
     "setup": "bash setup.sh",
-    "go": "npm run setup && npm run dev",
+    "go": "bash setup.sh",
     "publish": "bash publish.sh",
     "test": "vitest",
     "test:run": "vitest run",
