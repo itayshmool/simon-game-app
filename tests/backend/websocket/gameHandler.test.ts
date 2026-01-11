@@ -471,4 +471,139 @@ describe('WebSocket Game Handler', () => {
       expect(error.message).toBe('Only host can start the game');
     });
   });
+
+  // ===========================================================================
+  // RESTART GAME (PLAY AGAIN) TESTS
+  // ===========================================================================
+
+  describe('restart_game', () => {
+    it('should reset room status to waiting', async () => {
+      // Create room and set it to active (simulating game in progress)
+      const room = gameService.createRoom({ displayName: 'Alice', avatarId: '1' });
+      const hostId = room.players[0].id;
+      gameService.updateRoomStatus(room.gameCode, 'active');
+      gameService.updateGameState(room.gameCode, { someState: 'test' });
+      
+      // Verify room is active
+      expect(gameService.getRoom(room.gameCode)?.status).toBe('active');
+      expect(gameService.getRoom(room.gameCode)?.gameState).not.toBeNull();
+      
+      // Host connects
+      const hostSocket = await createClientSocket();
+      hostSocket.emit('join_room_socket', { gameCode: room.gameCode, playerId: hostId });
+      await waitForEvent<any>(hostSocket, 'room_state');
+      
+      // Listen for room_state_update (should come after restart)
+      const roomStatePromise = waitForEvent<any>(hostSocket, 'room_state_update');
+      
+      // Host restarts game
+      hostSocket.emit('restart_game', { gameCode: room.gameCode, playerId: hostId });
+      
+      // Assert room_state_update received with waiting status
+      const roomState = await roomStatePromise;
+      expect(roomState.status).toBe('waiting');
+      
+      // Verify backend state is also updated
+      const updatedRoom = gameService.getRoom(room.gameCode);
+      expect(updatedRoom?.status).toBe('waiting');
+      expect(updatedRoom?.gameState).toBeNull();
+    });
+
+    it('should emit game_restarted event to all players', async () => {
+      // Create room with host
+      const room = gameService.createRoom({ displayName: 'Alice', avatarId: '1' });
+      const hostId = room.players[0].id;
+      
+      // Guest joins BEFORE setting to active (joinRoom requires waiting status)
+      const updatedRoom = gameService.joinRoom(room.gameCode, { displayName: 'Bob', avatarId: '2' });
+      const guestId = updatedRoom.players[1].id;
+      
+      // Now set room to active (simulating game in progress)
+      gameService.updateRoomStatus(room.gameCode, 'active');
+      
+      // Host connects
+      const hostSocket = await createClientSocket();
+      hostSocket.emit('join_room_socket', { gameCode: room.gameCode, playerId: hostId });
+      await waitForEvent<any>(hostSocket, 'room_state');
+      
+      // Guest connects
+      const guestSocket = await createClientSocket();
+      guestSocket.emit('join_room_socket', { gameCode: room.gameCode, playerId: guestId });
+      await waitForEvent<any>(guestSocket, 'room_state');
+      
+      // Both listen for game_restarted
+      const hostRestartPromise = waitForEvent<any>(hostSocket, 'game_restarted');
+      const guestRestartPromise = waitForEvent<any>(guestSocket, 'game_restarted');
+      
+      // Host restarts game
+      hostSocket.emit('restart_game', { gameCode: room.gameCode, playerId: hostId });
+      
+      // Assert both receive game_restarted
+      const [hostRestart, guestRestart] = await Promise.all([
+        hostRestartPromise,
+        guestRestartPromise
+      ]);
+      
+      expect(hostRestart.gameCode).toBe(room.gameCode);
+      expect(guestRestart.gameCode).toBe(room.gameCode);
+    });
+
+    it('should broadcast room_state_update to all players', async () => {
+      // Create room with host
+      const room = gameService.createRoom({ displayName: 'Alice', avatarId: '1' });
+      const hostId = room.players[0].id;
+      
+      // Guest joins BEFORE setting to active (joinRoom requires waiting status)
+      const updatedRoom = gameService.joinRoom(room.gameCode, { displayName: 'Bob', avatarId: '2' });
+      const guestId = updatedRoom.players[1].id;
+      
+      // Now set room to active (simulating game in progress)
+      gameService.updateRoomStatus(room.gameCode, 'active');
+      
+      // Host connects
+      const hostSocket = await createClientSocket();
+      hostSocket.emit('join_room_socket', { gameCode: room.gameCode, playerId: hostId });
+      await waitForEvent<any>(hostSocket, 'room_state');
+      
+      // Guest connects - this will trigger a room_state_update with 'active' status
+      const guestSocket = await createClientSocket();
+      guestSocket.emit('join_room_socket', { gameCode: room.gameCode, playerId: guestId });
+      await waitForEvent<any>(guestSocket, 'room_state');
+      
+      // Wait for the join room_state_update to be sent (host gets it when guest joins)
+      await waitForEvent<any>(hostSocket, 'room_state_update');
+      
+      // Now listen for the RESTART room_state_update
+      const hostUpdatePromise = waitForEvent<any>(hostSocket, 'room_state_update');
+      const guestUpdatePromise = waitForEvent<any>(guestSocket, 'room_state_update');
+      
+      // Host restarts game
+      hostSocket.emit('restart_game', { gameCode: room.gameCode, playerId: hostId });
+      
+      // Assert both receive room_state_update with waiting status
+      const [hostUpdate, guestUpdate] = await Promise.all([
+        hostUpdatePromise,
+        guestUpdatePromise
+      ]);
+      
+      expect(hostUpdate.status).toBe('waiting');
+      expect(guestUpdate.status).toBe('waiting');
+      expect(hostUpdate.players).toHaveLength(2);
+      expect(guestUpdate.players).toHaveLength(2);
+    });
+
+    it('should emit error when room does not exist', async () => {
+      const socket = await createClientSocket();
+      
+      // Listen for error
+      const errorPromise = waitForEvent<any>(socket, 'error');
+      
+      // Try to restart non-existent room
+      socket.emit('restart_game', { gameCode: 'NOTFOUND', playerId: 'some-id' });
+      
+      // Assert error received
+      const error = await errorPromise;
+      expect(error.message).toBe('Room not found');
+    });
+  });
 });
