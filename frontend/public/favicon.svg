@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#1f2937"/>
+  
+  <!-- Green quadrant (top-left) -->
+  <path d="M16,16 L16,2 A14,14 0 0,0 2,16 Z" fill="#22c55e"/>
+  
+  <!-- Red quadrant (top-right) -->
+  <path d="M16,16 L30,16 A14,14 0 0,0 16,2 Z" fill="#ef4444"/>
+  
+  <!-- Yellow quadrant (bottom-left) -->
+  <path d="M16,16 L2,16 A14,14 0 0,0 16,30 Z" fill="#facc15"/>
+  
+  <!-- Blue quadrant (bottom-right) -->
+  <path d="M16,16 L16,30 A14,14 0 0,0 30,16 Z" fill="#3b82f6"/>
+  
+  <!-- Center dividers -->
+  <line x1="2" y1="16" x2="30" y2="16" stroke="#1f2937" stroke-width="2"/>
+  <line x1="16" y1="2" x2="16" y2="30" stroke="#1f2937" stroke-width="2"/>
+  
+  <!-- Center circle -->
+  <circle cx="16" cy="16" r="4" fill="#1f2937"/>
+  <circle cx="16" cy="16" r="3" fill="#111827" stroke="#22c55e" stroke-width="0.5"/>
+</svg>
