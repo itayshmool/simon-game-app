@@ -6,13 +6,13 @@
  * 
  * 100% REUSABLE - Do not add game-specific logic here.
  * 
- * PERSISTENCE: Rooms are saved to disk to survive server restarts.
- * Set DATA_DIR env var to a persistent disk path for full persistence.
+ * PERSISTENCE: Rooms are saved to Redis to survive server restarts AND deploys.
+ * Set REDIS_URL env var to connect to Redis (Render Key Value store).
+ * Falls back to in-memory storage if Redis is not available.
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
-import * as path from 'path';
+import Redis from 'ioredis';
 import type { 
   GameRoom, 
   Player, 
@@ -23,16 +23,34 @@ import { PLATFORM_CONSTANTS } from '@shared/types';
 import { generateGameCode } from '../utils/gameCode';
 
 // =============================================================================
-// PERSISTENCE CONFIG
+// REDIS CONFIG
 // =============================================================================
 
-// Use DATA_DIR env var for persistent disk, fallback to /tmp (survives restarts, not deploys)
-const DATA_DIR = process.env.DATA_DIR || '/tmp';
-const ROOMS_FILE = path.join(DATA_DIR, 'simon-rooms.json');
+const REDIS_URL = process.env.REDIS_URL;
+const ROOM_PREFIX = 'room:';
+const ROOM_TTL_SECONDS = Math.floor(PLATFORM_CONSTANTS.ROOM_MAX_AGE_MS / 1000);
 
-// Debounce save to avoid excessive disk writes
-let saveTimeout: NodeJS.Timeout | null = null;
-const SAVE_DEBOUNCE_MS = 500;
+let redis: Redis | null = null;
+
+if (REDIS_URL) {
+  redis = new Redis(REDIS_URL, {
+    maxRetriesPerRequest: 3,
+    retryStrategy(times) {
+      if (times > 3) return null;
+      return Math.min(times * 100, 3000);
+    },
+  });
+  
+  redis.on('connect', () => {
+    console.log('🔴 Redis connected');
+  });
+  
+  redis.on('error', (err) => {
+    console.error('❌ Redis error:', err.message);
+  });
+} else {
+  console.log('⚠️ REDIS_URL not set, using in-memory storage (rooms will be lost on restart)');
+}
 
 // =============================================================================
 // SERVICE CLASS
@@ -40,64 +58,91 @@ const SAVE_DEBOUNCE_MS = 500;
 
 export class GameService {
   private rooms: Map<string, GameRoom> = new Map();
-  
-  constructor() {
-    this.loadFromDisk();
-  }
+  private initialized = false;
 
   // ===========================================================================
   // PERSISTENCE
   // ===========================================================================
 
   /**
-   * Load rooms from disk on startup
+   * Initialize - load rooms from Redis on startup
    */
-  private loadFromDisk(): void {
-    try {
-      if (fs.existsSync(ROOMS_FILE)) {
-        const data = fs.readFileSync(ROOMS_FILE, 'utf-8');
-        const roomsArray: GameRoom[] = JSON.parse(data);
-        
-        // Convert dates back from strings
-        for (const room of roomsArray) {
-          room.createdAt = new Date(room.createdAt);
-          for (const player of room.players) {
-            player.lastActivity = new Date(player.lastActivity);
-            // Reset connection state on server restart
-            player.connected = false;
-            player.socketId = null;
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    
+    if (redis) {
+      try {
+        const keys = await redis.keys(`${ROOM_PREFIX}*`);
+        for (const key of keys) {
+          const data = await redis.get(key);
+          if (data) {
+            const room = this.deserializeRoom(data);
+            if (room) {
+              this.rooms.set(room.gameCode, room);
+            }
           }
-          this.rooms.set(room.gameCode, room);
         }
-        
-        console.log(`📂 Loaded ${roomsArray.length} rooms from disk`);
-      } else {
-        console.log('📂 No rooms file found, starting fresh');
+        console.log(`📂 Loaded ${this.rooms.size} rooms from Redis`);
+      } catch (error) {
+        console.error('❌ Failed to load rooms from Redis:', error);
       }
-    } catch (error) {
-      console.error('❌ Failed to load rooms from disk:', error);
+    }
+    
+    this.initialized = true;
+  }
+
+  /**
+   * Serialize room to JSON string
+   */
+  private serializeRoom(room: GameRoom): string {
+    return JSON.stringify(room);
+  }
+
+  /**
+   * Deserialize room from JSON string
+   */
+  private deserializeRoom(data: string): GameRoom | null {
+    try {
+      const room: GameRoom = JSON.parse(data);
+      // Convert dates back from strings
+      room.createdAt = new Date(room.createdAt);
+      for (const player of room.players) {
+        player.lastActivity = new Date(player.lastActivity);
+        // Reset connection state on server restart
+        player.connected = false;
+        player.socketId = null;
+      }
+      return room;
+    } catch {
+      return null;
     }
   }
 
   /**
-   * Save rooms to disk (debounced)
+   * Save room to Redis (async, fire-and-forget)
    */
-  private saveToDisk(): void {
-    // Clear existing timeout
-    if (saveTimeout) {
-      clearTimeout(saveTimeout);
-    }
+  private async saveRoom(room: GameRoom): Promise<void> {
+    if (!redis) return;
     
-    // Debounce saves
-    saveTimeout = setTimeout(() => {
-      try {
-        const roomsArray = Array.from(this.rooms.values());
-        fs.writeFileSync(ROOMS_FILE, JSON.stringify(roomsArray, null, 2));
-        console.log(`💾 Saved ${roomsArray.length} rooms to disk`);
-      } catch (error) {
-        console.error('❌ Failed to save rooms to disk:', error);
-      }
-    }, SAVE_DEBOUNCE_MS);
+    try {
+      const key = `${ROOM_PREFIX}${room.gameCode}`;
+      await redis.setex(key, ROOM_TTL_SECONDS, this.serializeRoom(room));
+    } catch (error) {
+      console.error('❌ Failed to save room to Redis:', error);
+    }
+  }
+
+  /**
+   * Delete room from Redis (async, fire-and-forget)
+   */
+  private async deleteRoomFromRedis(gameCode: string): Promise<void> {
+    if (!redis) return;
+    
+    try {
+      await redis.del(`${ROOM_PREFIX}${gameCode}`);
+    } catch (error) {
+      console.error('❌ Failed to delete room from Redis:', error);
+    }
   }
 
   // ===========================================================================
@@ -130,7 +175,7 @@ export class GameService {
     };
 
     this.rooms.set(gameCode, room);
-    this.saveToDisk();
+    this.saveRoom(room);
     
     return room;
   }
@@ -154,7 +199,7 @@ export class GameService {
    */
   deleteRoom(gameCode: string): boolean {
     const result = this.rooms.delete(gameCode);
-    if (result) this.saveToDisk();
+    if (result) this.deleteRoomFromRedis(gameCode);
     return result;
   }
 
@@ -166,7 +211,7 @@ export class GameService {
     if (!room) return null;
     
     room.status = status;
-    this.saveToDisk();
+    this.saveRoom(room);
     return room;
   }
 
@@ -178,7 +223,7 @@ export class GameService {
     if (!room) return null;
     
     room.gameState = gameState;
-    this.saveToDisk();
+    this.saveRoom(room);
     return room;
   }
 
@@ -215,7 +260,7 @@ export class GameService {
     };
 
     room.players.push(player);
-    this.saveToDisk();
+    this.saveRoom(room);
     
     return room;
   }
@@ -247,7 +292,7 @@ export class GameService {
     player.socketId = socketId;
     player.connected = true;
     player.lastActivity = new Date();
-    this.saveToDisk();
+    this.saveRoom(room);
 
     return room;
   }
@@ -264,7 +309,7 @@ export class GameService {
 
     player.connected = false;
     player.socketId = null;
-    this.saveToDisk();
+    this.saveRoom(room);
   }
 
   /**
@@ -296,7 +341,7 @@ export class GameService {
     if (!player) return;
 
     player.lastActivity = new Date();
-    // Don't save to disk for activity updates (too frequent)
+    // Don't save to Redis for activity updates (too frequent)
   }
 
   /**
@@ -316,7 +361,7 @@ export class GameService {
     // If room is empty, delete it
     if (room.players.length === 0) {
       this.rooms.delete(gameCode);
-      this.saveToDisk();
+      this.deleteRoomFromRedis(gameCode);
       return true;
     }
 
@@ -325,7 +370,7 @@ export class GameService {
       room.players[0].isHost = true;
     }
 
-    this.saveToDisk();
+    this.saveRoom(room);
     return true;
   }
 
@@ -345,6 +390,7 @@ export class GameService {
       const roomAge = now.getTime() - room.createdAt.getTime();
       if (roomAge > PLATFORM_CONSTANTS.ROOM_MAX_AGE_MS) {
         this.rooms.delete(gameCode);
+        this.deleteRoomFromRedis(gameCode);
         cleaned++;
         continue;
       }
@@ -360,14 +406,12 @@ export class GameService {
         
         if (disconnectAge > PLATFORM_CONSTANTS.DISCONNECT_GRACE_MS) {
           this.rooms.delete(gameCode);
+          this.deleteRoomFromRedis(gameCode);
           cleaned++;
         }
       }
     }
 
-    if (cleaned > 0) {
-      this.saveToDisk();
-    }
     return cleaned;
   }
 
@@ -382,8 +426,11 @@ export class GameService {
    * Clear all rooms (for testing)
    */
   clearAllRooms(): void {
+    // Delete all from Redis
+    for (const gameCode of this.rooms.keys()) {
+      this.deleteRoomFromRedis(gameCode);
+    }
     this.rooms.clear();
-    this.saveToDisk();
   }
 }
 
@@ -392,3 +439,6 @@ export class GameService {
 // =============================================================================
 
 export const gameService = new GameService();
+
+// Initialize on import (load rooms from Redis)
+gameService.initialize().catch(console.error);
