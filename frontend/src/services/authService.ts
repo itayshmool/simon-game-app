@@ -7,7 +7,8 @@
 import type { 
   CreateSessionResponse, 
   JoinGameResponse, 
-  VerifySessionResponse 
+  VerifySessionResponse,
+  Difficulty,
 } from '../shared/types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -17,7 +18,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
  */
 export async function createSession(
   displayName: string,
-  avatarId: string
+  avatarId: string,
+  difficulty: Difficulty = 'medium'
 ): Promise<CreateSessionResponse> {
   const response = await fetch(`${API_BASE_URL}/api/auth/create-session`, {
     method: 'POST',
@@ -25,7 +27,7 @@ export async function createSession(
       'Content-Type': 'application/json',
     },
     credentials: 'include', // CRITICAL: Send/receive cookies
-    body: JSON.stringify({ displayName, avatarId }),
+    body: JSON.stringify({ displayName, avatarId, difficulty }),
   });
 
   if (!response.ok) {
