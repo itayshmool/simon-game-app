@@ -170,7 +170,7 @@ function registerPlatformHandlers(io: Server, socket: SocketWithSession): void {
         return;
       }
       
-      // Update socket ID
+      // Update socket ID and mark connected
       gameService.updateSocketId(gameCode, playerId, socket.id);
       
       // Store session info on socket
@@ -181,16 +181,42 @@ function registerPlatformHandlers(io: Server, socket: SocketWithSession): void {
       // Join socket room
       socket.join(gameCode);
       
+      // Re-fetch room to ensure we have the latest state with all players
+      const updatedRoom = gameService.getRoom(gameCode);
+      if (!updatedRoom) {
+        socket.emit('error', { message: 'Room not found' });
+        return;
+      }
+      
+      // Prepare sanitized room data for clients
+      const roomData = {
+        gameCode: updatedRoom.gameCode,
+        status: updatedRoom.status,
+        players: updatedRoom.players.map(p => ({
+          id: p.id,
+          displayName: p.displayName,
+          avatarId: p.avatarId,
+          avatar: p.avatarId, // Include both for compatibility
+          isHost: p.isHost,
+          connected: p.connected,
+        })),
+      };
+      
       // Send initial room state to this player
-      socket.emit('room_state', room);
+      socket.emit('room_state', roomData);
       
-      // Broadcast updated room state to ALL players (including this one)
-      io.to(gameCode).emit('room_state_update', room);
+      // Broadcast updated room state to ALL players in the room
+      io.to(gameCode).emit('room_state_update', roomData);
       
-      // Also notify others for UI feedback (optional)
-      socket.to(gameCode).emit('player_joined', player);
+      // Also notify others for UI feedback
+      socket.to(gameCode).emit('player_joined', {
+        id: player.id,
+        displayName: player.displayName,
+        avatarId: player.avatarId,
+        isHost: player.isHost,
+      });
       
-      console.log(`🏠 Socket joined: ${player.displayName} in room ${gameCode} (${room.players.length} players)`);
+      console.log(`🏠 Socket joined: ${player.displayName} in room ${gameCode} (${updatedRoom.players.length} players)`);
     } catch (error) {
       console.error('❌ join_room_socket error:', error);
       socket.emit('error', { message: 'Failed to join room' });

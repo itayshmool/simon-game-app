@@ -68,19 +68,17 @@ export function WaitingRoomPage() {
   useEffect(() => {
     console.log('🎮 WaitingRoomPage mounted');
     
-    // CRITICAL FIX: Connect socket FIRST, then initialize listeners
+    // Connect socket first
     const socket = socketService.connect();
     console.log('✅ Socket connected:', socket.connected);
     
-    // Initialize Simon listeners AFTER socket is connected
+    // Initialize Simon game listeners
     initializeListeners();
     
-    // Join room via socket
-    if (gameCode && playerId) {
-      socket.emit('join_room_socket', { gameCode, playerId });
-    }
+    // IMPORTANT: Set up ALL listeners BEFORE emitting join_room_socket
+    // This prevents race conditions where server responds before listeners are ready
     
-    // Listen for initial room state (ONCE to avoid race condition)
+    // Listen for initial room state (ONCE to avoid duplicates)
     socket.once('room_state', (room: any) => {
       console.log('📦 Initial room state:', room);
       setPlayers(room.players || []);
@@ -96,6 +94,7 @@ export function WaitingRoomPage() {
     // Listen for room state updates (when players join/leave)
     socket.on('room_state_update', (room: any) => {
       console.log('🔄 Room state updated:', room);
+      console.log('🔄 Players in update:', room.players);
       setPlayers(room.players || []);
       setRoomStatus(room.status);
       
@@ -129,10 +128,10 @@ export function WaitingRoomPage() {
       }
     });
     
-    // Listen for player joined (for real-time feedback)
+    // Listen for player joined (show toast notification)
     socket.on('player_joined', (player: any) => {
       console.log('👋 Player joined:', player);
-      // Don't modify state here - wait for room_state_update
+      setToast({ message: `${player.displayName} joined!`, type: 'info' });
     });
     
     // Listen for player left
@@ -149,6 +148,12 @@ export function WaitingRoomPage() {
       setRoomStatus('waiting');
       lastCountdownValue.current = null;
     });
+    
+    // NOW emit join_room_socket AFTER all listeners are set up
+    if (gameCode && playerId) {
+      console.log('📤 Emitting join_room_socket:', { gameCode, playerId });
+      socket.emit('join_room_socket', { gameCode, playerId });
+    }
     
     // Cleanup on unmount
     return () => {
