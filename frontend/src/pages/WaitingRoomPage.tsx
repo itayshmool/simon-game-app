@@ -31,6 +31,11 @@ export function WaitingRoomPage() {
   const gameCode = session?.gameCode;
   const playerId = session?.playerId;
   
+  // Store gameCode and playerId in refs to avoid re-running useEffect
+  // This prevents the socket disconnect bug when state updates trigger re-renders
+  const gameCodeRef = useRef(gameCode);
+  const playerIdRef = useRef(playerId);
+  
   const { 
     isGameActive, 
     currentSequence, 
@@ -63,10 +68,24 @@ export function WaitingRoomPage() {
   const [players, setPlayers] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const lastCountdownValue = useRef<number | null>(null);
+  const hasInitialized = useRef(false);
   
-  // Initialize on mount
+  // Keep refs updated when values change
   useEffect(() => {
-    console.log('🎮 WaitingRoomPage mounted');
+    gameCodeRef.current = gameCode;
+    playerIdRef.current = playerId;
+  }, [gameCode, playerId]);
+  
+  // Initialize ONCE on mount - using refs to avoid dependency issues
+  useEffect(() => {
+    // Prevent double initialization (React StrictMode)
+    if (hasInitialized.current) {
+      console.log('🎮 WaitingRoomPage already initialized, skipping');
+      return;
+    }
+    hasInitialized.current = true;
+    
+    console.log('🎮 WaitingRoomPage mounted (ONCE)');
     
     // Connect socket first
     const socket = socketService.connect();
@@ -93,10 +112,11 @@ export function WaitingRoomPage() {
       setPlayers(room.players || []);
       setRoomStatus(room.status);
       
-      // Check if we're the host
-      const me = room.players?.find((p: any) => p.id === playerId);
+      // Check if we're the host - use ref for latest playerId
+      const currentPlayerId = playerIdRef.current;
+      const me = room.players?.find((p: any) => p.id === currentPlayerId);
       const isHostPlayer = me?.isHost || false;
-      console.log('🎮 isHost check:', { playerId, me, isHostPlayer });
+      console.log('🎮 isHost check:', { playerId: currentPlayerId, me, isHostPlayer });
       setIsHost(isHostPlayer);
     });
     
@@ -116,8 +136,9 @@ export function WaitingRoomPage() {
           setRoomStatus(room.status);
         }
         
-        // Check if we're the host
-        const me = room.players?.find((p: any) => p.id === playerId);
+        // Check if we're the host - use ref for latest playerId
+        const currentPlayerId = playerIdRef.current;
+        const me = room.players?.find((p: any) => p.id === currentPlayerId);
         setIsHost(me?.isHost || false);
         console.log('✅ Room state update processed successfully');
       } catch (err) {
@@ -174,14 +195,18 @@ export function WaitingRoomPage() {
     });
     
     // NOW emit join_room_socket AFTER all listeners are set up
-    if (gameCode && playerId) {
-      console.log('📤 Emitting join_room_socket:', { gameCode, playerId });
-      socket.emit('join_room_socket', { gameCode, playerId });
+    // Use refs to get current values
+    const currentGameCode = gameCodeRef.current;
+    const currentPlayerId = playerIdRef.current;
+    if (currentGameCode && currentPlayerId) {
+      console.log('📤 Emitting join_room_socket:', { gameCode: currentGameCode, playerId: currentPlayerId });
+      socket.emit('join_room_socket', { gameCode: currentGameCode, playerId: currentPlayerId });
     }
     
-    // Cleanup on unmount
+    // Cleanup on unmount ONLY
     return () => {
-      console.log('🧹 WaitingRoomPage cleanup');
+      console.log('🧹 WaitingRoomPage cleanup (unmount)');
+      hasInitialized.current = false;
       cleanup();
       socket.off('connect');
       socket.off('disconnect');
@@ -194,7 +219,7 @@ export function WaitingRoomPage() {
       socket.off('game_restarted');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameCode, playerId]); // Removed initializeListeners & cleanup - they're stable
+  }, []); // Empty deps - runs ONCE on mount only
   
   // Handle start game (host only)
   const handleStartGame = async () => {
