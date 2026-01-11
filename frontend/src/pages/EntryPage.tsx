@@ -2,6 +2,7 @@
  * Entry Page
  * 
  * Vibrant game-inspired design matching splash screen colors
+ * Fits mobile viewport without scrolling
  */
 
 import { useState } from 'react';
@@ -55,18 +56,20 @@ export function EntryPage() {
     return <SimonSplashScreen onComplete={() => setShowForm(true)} />;
   }
 
-  // Create Game Form
+  // Create Game Form - fits viewport without scrolling
   return (
     <div 
       style={{
-        minHeight: '100vh',
+        height: '100vh',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '2rem 1.25rem',
+        justifyContent: 'center',
+        padding: '1rem',
         position: 'relative',
         overflow: 'hidden',
+        boxSizing: 'border-box',
         background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
       }}
     >
@@ -76,57 +79,46 @@ export function EntryPage() {
           position: 'relative',
           zIndex: 10,
           width: '100%',
-          maxWidth: '24rem',
+          maxWidth: '22rem',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          gap: '0.75rem',
         }}
       >
         
-        {/* Simon Board Logo */}
+        {/* Simon Board Logo - compact */}
         <div 
           style={{
-            width: '6rem',
-            height: '6rem',
-            marginBottom: '1.5rem',
+            width: '4rem',
+            height: '4rem',
             position: 'relative',
             borderRadius: '50%',
             overflow: 'hidden',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-            border: '4px solid #1f2937',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
+            border: '3px solid #1f2937',
+            flexShrink: 0,
           }}
         >
-          {/* Green quadrant */}
           <div style={{ position: 'absolute', top: 0, left: 0, width: '50%', height: '50%', background: 'linear-gradient(to bottom right, #4ade80, #16a34a)' }} />
-          {/* Red quadrant */}
           <div style={{ position: 'absolute', top: 0, right: 0, width: '50%', height: '50%', background: 'linear-gradient(to bottom left, #f87171, #dc2626)' }} />
-          {/* Yellow quadrant */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, width: '50%', height: '50%', background: 'linear-gradient(to top right, #facc15, #ca8a04)' }} />
-          {/* Blue quadrant */}
           <div style={{ position: 'absolute', bottom: 0, right: 0, width: '50%', height: '50%', background: 'linear-gradient(to top left, #60a5fa, #2563eb)' }} />
-          {/* Vertical divider */}
-          <div style={{ position: 'absolute', top: 0, left: '50%', width: '4px', height: '100%', background: '#1f2937', transform: 'translateX(-50%)' }} />
-          {/* Horizontal divider */}
-          <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '4px', background: '#1f2937', transform: 'translateY(-50%)' }} />
-          {/* Center */}
+          <div style={{ position: 'absolute', top: 0, left: '50%', width: '3px', height: '100%', background: '#1f2937', transform: 'translateX(-50%)' }} />
+          <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '3px', background: '#1f2937', transform: 'translateY(-50%)' }} />
           <div 
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: '2rem',
-              height: '2rem',
+              width: '1.25rem',
+              height: '1.25rem',
               borderRadius: '50%',
               background: '#111827',
               border: '2px solid #4ade80',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
-          >
-            <span style={{ color: '#67e8f9', fontSize: '6px', fontWeight: 'bold', letterSpacing: '0.05em' }}>SIMON</span>
-          </div>
+          />
         </div>
         
         {/* Join code banner */}
@@ -135,14 +127,13 @@ export function EntryPage() {
             style={{
               width: '100%',
               backgroundColor: '#ffffff',
-              borderRadius: '1rem',
-              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-              padding: '1rem',
-              marginBottom: '1rem',
+              borderRadius: '0.75rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              padding: '0.5rem 0.75rem',
             }}
           >
-            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem', margin: 0 }}>Joining game</p>
-            <p style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.5rem', color: '#1f2937', margin: '0.5rem 0 0 0' }}>{joinCode}</p>
+            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.75rem', margin: 0 }}>Joining game</p>
+            <p style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.25rem', color: '#1f2937', margin: '0.25rem 0 0 0' }}>{joinCode}</p>
           </div>
         )}
         
@@ -151,13 +142,12 @@ export function EntryPage() {
           style={{
             width: '100%',
             backgroundColor: '#ffffff',
-            borderRadius: '1rem',
-            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-            padding: '1.25rem',
-            marginBottom: '1rem',
+            borderRadius: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            padding: '0.75rem',
           }}
         >
-          <label style={{ display: 'block', fontSize: '1.125rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.75rem' }}>
+          <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
             What's your name?
           </label>
           <input
@@ -169,11 +159,11 @@ export function EntryPage() {
             autoFocus
             style={{
               width: '100%',
-              padding: '0.875rem 1rem',
+              padding: '0.625rem 0.75rem',
               backgroundColor: '#f3f4f6',
               border: '2px solid #e5e7eb',
-              borderRadius: '0.75rem',
-              fontSize: '1.125rem',
+              borderRadius: '0.5rem',
+              fontSize: '1rem',
               color: '#1f2937',
               outline: 'none',
               boxSizing: 'border-box',
@@ -186,25 +176,24 @@ export function EntryPage() {
           style={{
             width: '100%',
             backgroundColor: '#ffffff',
-            borderRadius: '1rem',
-            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-            padding: '1.25rem',
-            marginBottom: '1rem',
+            borderRadius: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            padding: '0.75rem',
           }}
         >
-          <label style={{ display: 'block', fontSize: '1.125rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '1rem' }}>
+          <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
             Pick your avatar:
           </label>
           
-          {/* Horizontal scrolling avatars with fade edge */}
+          {/* Horizontal scrolling avatars */}
           <div style={{ position: 'relative' }}>
             <div 
               style={{
                 display: 'flex',
-                gap: '0.75rem',
+                gap: '0.5rem',
                 overflowX: 'auto',
-                paddingBottom: '0.5rem',
-                paddingRight: '2rem',
+                paddingBottom: '0.25rem',
+                paddingRight: '1.5rem',
                 scrollbarWidth: 'none',
               }}
             >
@@ -228,31 +217,30 @@ export function EntryPage() {
                   >
                     <div 
                       style={{
-                        width: '3.5rem',
-                        height: '3.5rem',
+                        width: '2.75rem',
+                        height: '2.75rem',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: '1.875rem',
+                        fontSize: '1.5rem',
                         transition: 'all 0.15s',
-                        border: isSelected ? '3px solid #22c55e' : '3px solid #e5e7eb',
+                        border: isSelected ? '3px solid #22c55e' : '2px solid #e5e7eb',
                         backgroundColor: isSelected ? '#f0fdf4' : '#ffffff',
                         transform: isSelected ? 'scale(1.1)' : 'scale(1)',
-                        boxShadow: isSelected ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none',
+                        boxShadow: isSelected ? '0 2px 8px rgba(34,197,94,0.3)' : 'none',
                       }}
                     >
                       {emoji}
                     </div>
-                    {/* Selection indicator bar */}
+                    {/* Selection dot */}
                     <div 
                       style={{
                         height: '4px',
-                        width: '2rem',
-                        borderRadius: '9999px',
-                        marginTop: '0.5rem',
+                        width: '4px',
+                        borderRadius: '50%',
+                        marginTop: '0.25rem',
                         backgroundColor: isSelected ? '#22c55e' : 'transparent',
-                        transition: 'all 0.15s',
                       }}
                     />
                   </button>
@@ -260,13 +248,13 @@ export function EntryPage() {
               })}
             </div>
             
-            {/* Fade gradient on right edge */}
+            {/* Fade gradient */}
             <div 
               style={{
                 position: 'absolute',
                 top: 0,
                 right: 0,
-                width: '3rem',
+                width: '2rem',
                 height: '100%',
                 pointerEvents: 'none',
                 background: 'linear-gradient(to right, transparent, #ffffff)',
@@ -283,10 +271,9 @@ export function EntryPage() {
               backgroundColor: '#fef2f2',
               border: '2px solid #fecaca',
               color: '#b91c1c',
-              padding: '0.75rem 1rem',
-              borderRadius: '0.75rem',
+              padding: '0.5rem 0.75rem',
+              borderRadius: '0.5rem',
               fontSize: '0.875rem',
-              marginBottom: '1rem',
               textAlign: 'center',
             }}
           >
@@ -301,10 +288,10 @@ export function EntryPage() {
           disabled={loading || displayName.length < 3}
           style={{
             width: '100%',
-            padding: '1rem',
+            padding: '0.875rem',
             borderRadius: '9999px',
             fontWeight: 'bold',
-            fontSize: '1.25rem',
+            fontSize: '1.125rem',
             color: '#ffffff',
             border: '2px solid #9333ea',
             cursor: loading || displayName.length < 3 ? 'not-allowed' : 'pointer',
@@ -312,8 +299,9 @@ export function EntryPage() {
             background: 'linear-gradient(180deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)',
             boxShadow: loading || displayName.length < 3 
               ? 'none' 
-              : '0 6px 0 0 #581c87, 0 8px 16px rgba(88, 28, 135, 0.3)',
+              : '0 4px 0 0 #581c87, 0 6px 12px rgba(88, 28, 135, 0.3)',
             transition: 'all 0.15s ease-out',
+            marginTop: '0.25rem',
           }}
         >
           {loading ? 'Loading...' : isJoining ? 'JOIN GAME' : 'CREATE GAME'}
