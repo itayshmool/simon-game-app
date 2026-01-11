@@ -43,11 +43,19 @@ export const gameCodeSchema = z
   .regex(/^[A-Za-z0-9]+$/, 'Game code must be alphanumeric');
 
 /**
+ * Difficulty validation schema
+ */
+export const difficultySchema = z
+  .enum(['easy', 'medium', 'hard'])
+  .default('medium');
+
+/**
  * Create session request schema
  */
 export const createSessionSchema = z.object({
   displayName: displayNameSchema,
   avatarId: avatarIdSchema,
+  difficulty: difficultySchema.optional(),
 });
 
 /**

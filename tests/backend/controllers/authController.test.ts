@@ -100,6 +100,68 @@ describe('Auth Controller', () => {
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('error', 'Validation failed');
     });
+
+    // Difficulty tests
+    it('should create session with easy difficulty', async () => {
+      const response = await request(app)
+        .post('/api/auth/create-session')
+        .send({
+          displayName: 'Alice',
+          avatarId: '1',
+          difficulty: 'easy',
+        });
+
+      expect(response.status).toBe(201);
+      
+      // Verify room has easy difficulty
+      const room = gameService.getRoom(response.body.gameCode);
+      expect(room?.difficulty).toBe('easy');
+    });
+
+    it('should create session with hard difficulty', async () => {
+      const response = await request(app)
+        .post('/api/auth/create-session')
+        .send({
+          displayName: 'Alice',
+          avatarId: '1',
+          difficulty: 'hard',
+        });
+
+      expect(response.status).toBe(201);
+      
+      // Verify room has hard difficulty
+      const room = gameService.getRoom(response.body.gameCode);
+      expect(room?.difficulty).toBe('hard');
+    });
+
+    it('should default to medium difficulty when not provided', async () => {
+      const response = await request(app)
+        .post('/api/auth/create-session')
+        .send({
+          displayName: 'Alice',
+          avatarId: '1',
+          // No difficulty provided
+        });
+
+      expect(response.status).toBe(201);
+      
+      // Verify room defaults to medium
+      const room = gameService.getRoom(response.body.gameCode);
+      expect(room?.difficulty).toBe('medium');
+    });
+
+    it('should return 400 for invalid difficulty', async () => {
+      const response = await request(app)
+        .post('/api/auth/create-session')
+        .send({
+          displayName: 'Alice',
+          avatarId: '1',
+          difficulty: 'impossible', // Invalid
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+    });
   });
 
   // ===========================================================================

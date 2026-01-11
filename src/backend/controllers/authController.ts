@@ -39,10 +39,10 @@ authRouter.post('/create-session', (req: Request, res: Response) => {
     console.log('🔍 CREATE SESSION - Request body:', JSON.stringify(req.body));
     
     // Validate input
-    const { displayName, avatarId } = validateCreateSession(req.body);
+    const { displayName, avatarId, difficulty = 'medium' } = validateCreateSession(req.body);
     
-    // Create room with host
-    const room = gameService.createRoom({ displayName, avatarId });
+    // Create room with host and difficulty
+    const room = gameService.createRoom({ displayName, avatarId }, difficulty);
     const player = room.players[0];
     
     // Create session
@@ -67,7 +67,7 @@ authRouter.post('/create-session', (req: Request, res: Response) => {
       session,
     };
     
-    console.log(`✅ Room created: ${room.gameCode} by ${displayName}`);
+    console.log(`✅ Room created: ${room.gameCode} by ${displayName} (${difficulty})`);
     
     res.status(201).json(response);
   } catch (error) {
