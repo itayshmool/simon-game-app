@@ -8,10 +8,10 @@ import { useEffect } from 'react';
 
 interface SimonSplashScreenProps {
   onComplete: () => void;
-  duration?: number; // in milliseconds, default 3000 (3 seconds)
+  duration?: number; // in milliseconds, default 1000 (1 second)
 }
 
-export function SimonSplashScreen({ onComplete, duration = 3000 }: SimonSplashScreenProps) {
+export function SimonSplashScreen({ onComplete, duration = 1000 }: SimonSplashScreenProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onComplete();

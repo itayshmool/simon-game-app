@@ -414,6 +414,11 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
    */
   addColorToSequence: (color: Color) => {
     set((state) => {
+      // Ignore input if player already entered enough colors
+      if (state.playerSequence.length >= state.currentSequence.length) {
+        return state; // No change
+      }
+      
       const newPlayerSequence = [...state.playerSequence, color];
       const canSubmit = newPlayerSequence.length === state.currentSequence.length;
       
