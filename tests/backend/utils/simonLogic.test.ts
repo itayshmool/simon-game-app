@@ -426,3 +426,62 @@ describe('Solo Mode Integration', () => {
     expect(shouldGameEnd(result.gameState)).toBe(true); // 0 active players
   });
 });
+
+// =============================================================================
+// DIFFICULTY TESTS
+// =============================================================================
+
+describe('Difficulty Settings', () => {
+  describe('initializeSimonGame with difficulty', () => {
+    it('should default to medium difficulty', () => {
+      const players = createMockPlayers(1);
+      const gameState = initializeSimonGame(players);
+      
+      expect(gameState.difficulty).toBe('medium');
+    });
+
+    it('should set easy difficulty', () => {
+      const players = createMockPlayers(1);
+      const gameState = initializeSimonGame(players, 'easy');
+      
+      expect(gameState.difficulty).toBe('easy');
+    });
+
+    it('should set hard difficulty', () => {
+      const players = createMockPlayers(1);
+      const gameState = initializeSimonGame(players, 'hard');
+      
+      expect(gameState.difficulty).toBe('hard');
+    });
+
+    it('should store difficulty in game state', () => {
+      const players = createMockPlayers(2);
+      const easyGame = initializeSimonGame(players, 'easy');
+      const hardGame = initializeSimonGame(players, 'hard');
+      
+      expect(easyGame.difficulty).toBe('easy');
+      expect(hardGame.difficulty).toBe('hard');
+    });
+  });
+
+  describe('advanceToNextRound preserves difficulty', () => {
+    it('should preserve easy difficulty across rounds', () => {
+      const players = createMockPlayers(1);
+      let gameState = initializeSimonGame(players, 'easy');
+      
+      gameState = advanceToNextRound(gameState);
+      expect(gameState.difficulty).toBe('easy');
+      
+      gameState = advanceToNextRound(gameState);
+      expect(gameState.difficulty).toBe('easy');
+    });
+
+    it('should preserve hard difficulty across rounds', () => {
+      const players = createMockPlayers(1);
+      let gameState = initializeSimonGame(players, 'hard');
+      
+      gameState = advanceToNextRound(gameState);
+      expect(gameState.difficulty).toBe('hard');
+    });
+  });
+});

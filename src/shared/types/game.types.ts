@@ -5,6 +5,8 @@
  * Platform types belong in platform.types.ts
  */
 
+import type { Difficulty } from './platform.types';
+
 // =============================================================================
 // SHARED GAME TYPES
 // =============================================================================
@@ -158,6 +160,7 @@ export interface SimonGameState {
   submissions: Record<string, PlayerSubmission>; // Current round submissions (Step 4)
   roundWinner: string | null;                  // Winner of current round (Step 4)
   winnerId: string | null;                     // Last player standing
+  difficulty: Difficulty;                      // Game speed setting
 }
 
 /**
@@ -239,8 +242,6 @@ export interface SimonClientEvents {
     inputIndex: number;
   }) => void;
 }
-
-import type { Difficulty } from './platform.types';
 
 /**
  * Difficulty settings - timing for each level

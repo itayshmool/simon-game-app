@@ -27,7 +27,7 @@ import {
   processRoundSubmissions,
   haveAllPlayersSubmitted,
 } from '../utils/simonLogic';
-import { PLATFORM_CONSTANTS, COLOR_RACE_CONSTANTS, SIMON_CONSTANTS } from '@shared/types';
+import { PLATFORM_CONSTANTS, COLOR_RACE_CONSTANTS, getSimonConstantsForDifficulty } from '@shared/types';
 import type { Player } from '@shared/types';
 import type { ColorRaceGameState, PlayerAnswer, SimonGameState, Color } from '@shared/types';
 
@@ -616,11 +616,11 @@ function startCountdown(io: Server, gameCode: string): void {
       if (!room) return;
       
       if (gameType === 'simon') {
-        // Initialize Simon game
-        const gameState = initializeSimonGame(room.players);
+        // Initialize Simon game with room's difficulty
+        const gameState = initializeSimonGame(room.players, room.difficulty);
         gameService.updateGameState(gameCode, gameState);
         
-        console.log(`🎮 Simon started in room: ${gameCode}`);
+        console.log(`🎮 Simon started in room: ${gameCode} (${room.difficulty})`);
         
         // Start showing sequence after brief delay
         setTimeout(() => {
@@ -712,20 +712,25 @@ function processColorRaceRound(
  * Show the Simon sequence to all players
  */
 function showSimonSequence(io: Server, gameCode: string, gameState: SimonGameState): void {
-  const { sequence, round } = gameState;
+  const { sequence, round, difficulty } = gameState;
   
-  // Emit sequence start event
+  // Get difficulty-specific timing constants
+  const constants = getSimonConstantsForDifficulty(difficulty);
+  
+  // Emit sequence start event with timing info
   io.to(gameCode).emit('simon:show_sequence', {
     round,
     sequence,
+    colorDurationMs: constants.SHOW_COLOR_DURATION_MS,
+    colorGapMs: constants.SHOW_COLOR_GAP_MS,
   });
   
-  console.log(`🎨 Showing sequence for round ${round}: [${sequence.join(', ')}]`);
+  console.log(`🎨 Showing sequence for round ${round}: [${sequence.join(', ')}] (${difficulty})`);
   console.log(`📡 Emitted simon:show_sequence to room ${gameCode}`);
   
-  // Calculate total animation time
+  // Calculate total animation time based on difficulty
   // Each color shows for SHOW_COLOR_DURATION_MS + GAP
-  const totalTime = sequence.length * (SIMON_CONSTANTS.SHOW_COLOR_DURATION_MS + SIMON_CONSTANTS.SHOW_COLOR_GAP_MS);
+  const totalTime = sequence.length * (constants.SHOW_COLOR_DURATION_MS + constants.SHOW_COLOR_GAP_MS);
   
   // After sequence completes, start input phase (Step 2 & Step 3)
   setTimeout(() => {

@@ -5,13 +5,13 @@
  * Handles sequence generation, validation, and game progression.
  */
 
-import type { Player } from '@shared/types';
+import type { Player, Difficulty } from '@shared/types';
 import type { 
   Color, 
   SimonGameState, 
   SimonPlayerState,
 } from '@shared/types';
-import { COLORS, SIMON_CONSTANTS } from '@shared/types';
+import { COLORS, getSimonConstantsForDifficulty } from '@shared/types';
 
 // =============================================================================
 // INITIALIZATION
@@ -20,7 +20,7 @@ import { COLORS, SIMON_CONSTANTS } from '@shared/types';
 /**
  * Initialize a new Simon game state
  */
-export function initializeSimonGame(players: Player[]): SimonGameState {
+export function initializeSimonGame(players: Player[], difficulty: Difficulty = 'medium'): SimonGameState {
   const playerStates: Record<string, SimonPlayerState> = {};
   
   // Initialize state for all players
@@ -34,7 +34,8 @@ export function initializeSimonGame(players: Player[]): SimonGameState {
   });
   
   // Generate first sequence (1 color for round 1)
-  const initialSequence = generateSequence(SIMON_CONSTANTS.INITIAL_SEQUENCE_LENGTH);
+  const constants = getSimonConstantsForDifficulty(difficulty);
+  const initialSequence = generateSequence(constants.INITIAL_SEQUENCE_LENGTH);
   
   // Initialize scores (Step 4)
   const scores: Record<string, number> = {};
@@ -49,13 +50,14 @@ export function initializeSimonGame(players: Player[]): SimonGameState {
     round: 1,
     playerStates,
     currentShowingIndex: 0,
-    timeoutMs: calculateTimeoutMs(SIMON_CONSTANTS.INITIAL_SEQUENCE_LENGTH), // ✅ 17 seconds for round 1!
+    timeoutMs: calculateTimeoutMs(constants.INITIAL_SEQUENCE_LENGTH),
     timeoutAt: null,        // Step 3: Set when input phase begins
     timerStartedAt: null,   // Step 3: Set when input phase begins
     scores,                 // Step 4: Player scores
     submissions: {},        // Step 4: Current round submissions
     roundWinner: null,      // Step 4: Round winner
     winnerId: null,
+    difficulty,             // Store difficulty for later rounds
   };
 }
 
@@ -243,13 +245,16 @@ export function haveAllPlayersSubmitted(gameState: SimonGameState): boolean {
  * Advance to the next round
  */
 export function advanceToNextRound(gameState: SimonGameState): SimonGameState {
+  // Get difficulty-specific constants
+  const constants = getSimonConstantsForDifficulty(gameState.difficulty);
+  
   // Extend sequence by one color
   const newSequence = extendSequence(gameState.sequence);
   
   // Calculate new timeout (decreases each round but has minimum)
   const newTimeout = Math.max(
-    SIMON_CONSTANTS.MIN_TIMEOUT_MS,
-    gameState.timeoutMs - SIMON_CONSTANTS.TIMEOUT_DECREMENT_MS
+    constants.MIN_TIMEOUT_MS,
+    gameState.timeoutMs - constants.TIMEOUT_DECREMENT_MS
   );
   
   // Reset all active players' input index for new round
