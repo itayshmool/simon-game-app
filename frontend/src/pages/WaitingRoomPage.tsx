@@ -17,6 +17,14 @@ import { GameOverScreen } from '../components/game/GameOverScreen';
 import { Toast } from '../components/ui/Toast';
 import { MuteButton } from '../components/ui/MuteButton';
 
+// Avatar mapping
+const AVATAR_EMOJIS: Record<string, string> = {
+  '1': '🦁', '2': '🐯', '3': '🦊', '4': '🐼', '5': '🐸',
+  '6': '🦄', '7': '🐙', '8': '🦋', '9': '🐨', '10': '🦉'
+};
+
+const MAX_PLAYERS = 4;
+
 export function WaitingRoomPage() {
   const navigate = useNavigate();
   const { session, clearSession } = useAuthStore();
@@ -198,41 +206,6 @@ export function WaitingRoomPage() {
     }
   };
   
-  // Copy invite link to clipboard
-  const copyInviteLink = async () => {
-    if (!gameCode) return;
-    
-    const inviteUrl = `${window.location.origin}/?join=${gameCode}`;
-    
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setToast({ message: 'Invite link copied!', type: 'success' });
-    } catch (err) {
-      setToast({ message: 'Failed to copy link', type: 'error' });
-    }
-  };
-  
-  // Handle Play Again
-  const handlePlayAgain = () => {
-    // Reset local game state
-    resetGame();
-    setRoomStatus('waiting');
-    
-    // Emit restart_game to reset room on server
-    const socket = socketService.getSocket();
-    if (socket && gameCode && playerId) {
-      console.log('🔄 Restarting game:', { gameCode, playerId });
-      socket.emit('restart_game', { gameCode, playerId });
-    }
-  };
-
-  // Handle Go Home
-  const handleGoHome = () => {
-    cleanup();
-    clearSession();
-    navigate('/');
-  };
-
   // Share game using native share API (mobile-friendly)
   const shareGame = async () => {
     if (!gameCode) return;
@@ -251,13 +224,44 @@ export function WaitingRoomPage() {
       } catch (err) {
         // User cancelled or error - fallback to copy
         if ((err as Error).name !== 'AbortError') {
-          copyInviteLink();
+          try {
+            await navigator.clipboard.writeText(inviteUrl);
+            setToast({ message: 'Invite link copied!', type: 'success' });
+          } catch {
+            setToast({ message: 'Failed to share', type: 'error' });
+          }
         }
       }
     } else {
       // Fallback to copy for desktop
-      copyInviteLink();
+      try {
+        await navigator.clipboard.writeText(inviteUrl);
+        setToast({ message: 'Invite link copied!', type: 'success' });
+      } catch {
+        setToast({ message: 'Failed to copy link', type: 'error' });
+      }
     }
+  };
+  
+  // Handle Play Again
+  const handlePlayAgain = () => {
+    // Reset local game state
+    resetGame();
+    setRoomStatus('waiting');
+    
+    // Emit restart_game to reset room on server
+    const socket = socketService.getSocket();
+    if (socket && gameCode && playerId) {
+      console.log('🔄 Restarting game:', { gameCode, playerId });
+      socket.emit('restart_game', { gameCode, playerId });
+    }
+  };
+
+  // Handle Go Home / Leave Room
+  const handleGoHome = () => {
+    cleanup();
+    clearSession();
+    navigate('/');
   };
   
   // Render Game Over screen
@@ -375,18 +379,57 @@ export function WaitingRoomPage() {
   // Render countdown
   if (roomStatus === 'countdown' && countdownValue !== null) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-6xl sm:text-7xl md:text-9xl font-bold text-white mb-4">{countdownValue}</h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-white/80">Get ready!</p>
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '100dvh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '8rem', fontWeight: 'bold', color: 'white', marginBottom: '1rem', textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+            {countdownValue}
+          </h1>
+          <p style={{ fontSize: '1.5rem', color: 'rgba(255,255,255,0.9)' }}>Get ready!</p>
         </div>
       </div>
     );
   }
   
+  // Create empty slots array for the grid
+  const playerSlots = [...players];
+  while (playerSlots.length < MAX_PLAYERS) {
+    playerSlots.push(null);
+  }
+  
   // Render waiting room
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-3 sm:p-4">
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '100dvh',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+      }}
+    >
       {/* Toast notification */}
       {toast && (
         <Toast
@@ -396,88 +439,295 @@ export function WaitingRoomPage() {
         />
       )}
       
-      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8 max-w-md sm:max-w-xl md:max-w-2xl w-full">
-        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2">Waiting Room</h1>
+      {/* Content container */}
+      <div 
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          maxWidth: '22rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.75rem',
+        }}
+      >
+        {/* Title */}
+        <h1 style={{ 
+          fontSize: '1.375rem', 
+          fontWeight: 'bold', 
+          color: 'white', 
+          letterSpacing: '0.1em',
+          textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+          margin: 0,
+        }}>
+          WAITING ROOM
+        </h1>
         
-        {/* Game Code Display with Share Buttons */}
-        <div className="mb-6 sm:mb-8">
-          <p className="text-center text-gray-600 mb-3 text-sm sm:text-base">
-            Game Code: <span className="font-mono font-bold text-xl sm:text-2xl text-purple-600">{gameCode}</span>
-          </p>
-          
-          {/* Invite Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        {/* Room Code Card */}
+        <div 
+          style={{
+            width: '100%',
+            backgroundColor: '#ffffff',
+            borderRadius: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            padding: '0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ fontSize: '0.7rem', color: '#6b7280', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>
+            ROOM CODE
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ 
+              fontFamily: 'monospace', 
+              fontSize: '1.5rem', 
+              fontWeight: 'bold', 
+              color: '#7c3aed',
+              letterSpacing: '0.15em',
+            }}>
+              {gameCode}
+            </span>
             <button
               onClick={copyGameCode}
-              className="bg-gray-100 hover:bg-gray-200 active:bg-gray-300 active:scale-95 text-gray-700 font-medium py-2.5 sm:py-2 px-4 rounded-lg transition-all duration-75 flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]"
-              style={{ touchAction: 'manipulation' }}
-              title="Copy game code"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                fontSize: '1.25rem',
+                opacity: 0.6,
+              }}
+              title="Copy code"
             >
-              📋 <span className="hidden sm:inline">Copy Code</span><span className="sm:hidden">Code</span>
-            </button>
-            
-            <button
-              onClick={copyInviteLink}
-              className="bg-blue-100 hover:bg-blue-200 active:bg-blue-300 active:scale-95 text-blue-700 font-medium py-2.5 sm:py-2 px-4 rounded-lg transition-all duration-75 flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]"
-              style={{ touchAction: 'manipulation' }}
-              title="Copy invite link"
-            >
-              🔗 <span className="hidden sm:inline">Copy Link</span><span className="sm:hidden">Link</span>
-            </button>
-            
-            <button
-              onClick={shareGame}
-              className="bg-green-100 hover:bg-green-200 active:bg-green-300 active:scale-95 text-green-700 font-medium py-2.5 sm:py-2 px-4 rounded-lg transition-all duration-75 flex items-center justify-center gap-2 text-sm sm:text-base min-h-[44px]"
-              style={{ touchAction: 'manipulation' }}
-              title="Share with friends"
-            >
-              📤 Share
+              📋
             </button>
           </div>
         </div>
         
-        {/* Players List */}
-        <div className="mb-6 sm:mb-8">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Players ({players.length})</h2>
-          <div className="space-y-2">
-            {players.map(player => (
-              <div 
-                key={player.id} 
-                className="bg-gray-100 rounded-lg p-3 flex items-center justify-between"
-              >
-                <span className="font-medium">
-                  {player.displayName}
-                  {player.id === playerId && ' (You)'}
-                </span>
-                {player.isHost && <span className="text-yellow-500">👑 Host</span>}
-              </div>
-            ))}
+        {/* Players Card */}
+        <div 
+          style={{
+            width: '100%',
+            backgroundColor: '#ffffff',
+            borderRadius: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            padding: '0.75rem',
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1rem' }}>👥</span>
+              PLAYERS
+            </span>
+            <span style={{ 
+              backgroundColor: '#f3f4f6', 
+              padding: '0.25rem 0.625rem', 
+              borderRadius: '9999px',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              color: '#1f2937',
+            }}>
+              {players.length} <span style={{ color: '#9ca3af' }}>/ {MAX_PLAYERS}</span>
+            </span>
+          </div>
+          
+          {/* Player Grid */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr', 
+            gap: '0.5rem',
+          }}>
+            {playerSlots.map((player, index) => {
+              const isCurrentPlayer = player?.id === playerId;
+              const isPlayerHost = player?.isHost;
+              const avatarEmoji = player ? (AVATAR_EMOJIS[player.avatarId] || player.avatar || '🎮') : null;
+              
+              if (player) {
+                // Filled slot
+                return (
+                  <div
+                    key={player.id}
+                    style={{
+                      backgroundColor: isCurrentPlayer ? '#f0fdf4' : '#f9fafb',
+                      border: isCurrentPlayer ? '2px solid #22c55e' : '1px solid #e5e7eb',
+                      borderRadius: '0.75rem',
+                      padding: '0.625rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      minHeight: '5.5rem',
+                    }}
+                  >
+                    {/* Avatar */}
+                    <div style={{
+                      width: '2.75rem',
+                      height: '2.75rem',
+                      borderRadius: '50%',
+                      backgroundColor: isCurrentPlayer ? '#22c55e' : '#e5e7eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.5rem',
+                      position: 'relative',
+                      boxShadow: isCurrentPlayer ? '0 0 12px rgba(34, 197, 94, 0.4)' : 'none',
+                    }}>
+                      {avatarEmoji}
+                      {/* Online indicator */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '-2px',
+                        right: '-2px',
+                        width: '0.875rem',
+                        height: '0.875rem',
+                        borderRadius: '50%',
+                        backgroundColor: '#22c55e',
+                        border: '2px solid white',
+                      }} />
+                    </div>
+                    
+                    {/* Name */}
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      fontWeight: '600', 
+                      color: '#1f2937',
+                      marginTop: '0.375rem',
+                      textAlign: 'center',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {isCurrentPlayer ? 'YOU' : player.displayName}
+                    </span>
+                    
+                    {/* Host badge */}
+                    {isPlayerHost && (
+                      <span style={{ 
+                        fontSize: '0.625rem', 
+                        fontWeight: '600', 
+                        color: '#22c55e',
+                        marginTop: '0.125rem',
+                      }}>
+                        HOST
+                      </span>
+                    )}
+                  </div>
+                );
+              } else {
+                // Empty slot
+                return (
+                  <div
+                    key={`empty-${index}`}
+                    style={{
+                      backgroundColor: '#f9fafb',
+                      border: '1.5px dashed #d1d5db',
+                      borderRadius: '0.75rem',
+                      padding: '0.625rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: '5.5rem',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.5rem', color: '#d1d5db' }}>?</span>
+                    <span style={{ fontSize: '0.625rem', color: '#9ca3af', marginTop: '0.25rem', letterSpacing: '0.05em' }}>
+                      EMPTY
+                    </span>
+                  </div>
+                );
+              }
+            })}
           </div>
         </div>
         
-        {/* Start Button (host only, or solo player) */}
+        {/* INVITE FRIENDS Button */}
+        <button
+          onClick={shareGame}
+          style={{
+            width: '100%',
+            padding: '0.75rem',
+            borderRadius: '9999px',
+            backgroundColor: '#ffffff',
+            border: 'none',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          <span style={{ fontSize: '1rem' }}>📤</span>
+          <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#7c3aed', letterSpacing: '0.05em' }}>
+            INVITE FRIENDS
+          </span>
+        </button>
+        
+        {/* START GAME Button (host only, or solo player) */}
         {(isHost || players.length === 1) && (
-          <>
-            {players.length === 1 && (
-              <p className="text-center text-sm text-gray-500 mb-2">
-                💡 You can start solo or wait for others to join
-              </p>
-            )}
-            <button
-              onClick={handleStartGame}
-              className="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 active:scale-98 text-white font-bold py-3 sm:py-4 px-6 rounded-lg sm:rounded-xl transition-all duration-75 text-base sm:text-lg min-h-[56px]"
-              style={{ touchAction: 'manipulation' }}
-            >
-              🎮 {players.length === 1 ? 'Start Solo Game' : 'Start Game'}
-            </button>
-          </>
+          <button
+            onClick={handleStartGame}
+            style={{
+              width: '100%',
+              padding: '0.875rem',
+              borderRadius: '9999px',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              color: '#ffffff',
+              border: '2px solid #9333ea',
+              cursor: 'pointer',
+              background: 'linear-gradient(180deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)',
+              boxShadow: '0 4px 0 0 #581c87, 0 6px 12px rgba(88, 28, 135, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              letterSpacing: '0.05em',
+            }}
+          >
+            <span style={{ fontSize: '1.25rem' }}>▶️</span>
+            START GAME
+          </button>
         )}
         
+        {/* Waiting for host message */}
         {!isHost && players.length > 1 && (
-          <p className="text-center text-gray-500 text-sm sm:text-base">
+          <p style={{ 
+            color: 'rgba(255,255,255,0.9)', 
+            fontSize: '0.875rem',
+            textAlign: 'center',
+            margin: 0,
+          }}>
             Waiting for host to start the game...
           </p>
         )}
+        
+        {/* LEAVE ROOM Button */}
+        <button
+          onClick={handleGoHome}
+          style={{
+            width: '100%',
+            padding: '0.625rem',
+            borderRadius: '9999px',
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            border: '2px solid rgba(255,255,255,0.8)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          <span style={{ fontSize: '0.875rem' }}>🚪</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'white', letterSpacing: '0.05em' }}>
+            LEAVE ROOM
+          </span>
+        </button>
       </div>
     </div>
   );

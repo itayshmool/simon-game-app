@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720">
+  <defs>
+    <!-- Rainbow gradient background (matching splash/create game) -->
+    <linearGradient id="rainbowBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ade80"/>
+      <stop offset="25%" style="stop-color:#facc15"/>
+      <stop offset="50%" style="stop-color:#f97316"/>
+      <stop offset="75%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+    
+    <!-- Purple button gradient (matching CREATE GAME) -->
+    <linearGradient id="purpleBtn" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#c084fc"/>
+      <stop offset="50%" style="stop-color:#a855f7"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    
+    <!-- Card shadow -->
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.15"/>
+    </filter>
+    
+    <!-- Green glow for host -->
+    <filter id="greenGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Rainbow Background -->
+  <rect width="360" height="720" fill="url(#rainbowBg)"/>
+  
+  <!-- Title: WAITING ROOM -->
+  <text x="180" y="55" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="white" letter-spacing="2">
+    WAITING ROOM
+  </text>
+  
+  <!-- Room Code Card -->
+  <g transform="translate(24, 75)" filter="url(#cardShadow)">
+    <rect width="312" height="70" rx="16" fill="white"/>
+    
+    <!-- "ROOM CODE" label -->
+    <text x="156" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#6b7280" letter-spacing="1">
+      ROOM CODE
+    </text>
+    
+    <!-- Code -->
+    <text x="140" y="52" text-anchor="middle" font-family="monospace" font-size="26" font-weight="bold" fill="#7c3aed" letter-spacing="4">
+      HCDEGT
+    </text>
+    
+    <!-- Copy icon -->
+    <g transform="translate(265, 32)">
+      <rect x="0" y="0" width="12" height="14" rx="2" fill="none" stroke="#9ca3af" stroke-width="1.5"/>
+      <rect x="4" y="4" width="12" height="14" rx="2" fill="white" stroke="#9ca3af" stroke-width="1.5"/>
+    </g>
+  </g>
+  
+  <!-- Players Section Card -->
+  <g transform="translate(24, 160)" filter="url(#cardShadow)">
+    <rect width="312" height="310" rx="16" fill="white"/>
+    
+    <!-- Header row -->
+    <g transform="translate(16, 22)">
+      <!-- Players icon -->
+      <circle cx="12" cy="0" r="6" fill="none" stroke="#6b7280" stroke-width="1.5"/>
+      <circle cx="26" cy="0" r="6" fill="none" stroke="#6b7280" stroke-width="1.5"/>
+      
+      <!-- "PLAYERS" text -->
+      <text x="44" y="5" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937" letter-spacing="1">
+        PLAYERS
+      </text>
+      
+      <!-- Counter badge "1 / 4" -->
+      <g transform="translate(210, -12)">
+        <rect width="55" height="24" rx="12" fill="#f3f4f6"/>
+        <text x="27" y="16" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#1f2937">
+          1 <tspan fill="#9ca3af">/ 4</tspan>
+        </text>
+      </g>
+    </g>
+    
+    <!-- Player Grid (2x2) -->
+    <!-- Player 1 (Host - You) - Top Left -->
+    <g transform="translate(16, 45)">
+      <rect width="135" height="115" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+      
+      <!-- Avatar circle with green glow -->
+      <circle cx="67" cy="42" r="30" fill="#22c55e" filter="url(#greenGlow)"/>
+      <circle cx="67" cy="42" r="26" fill="#dcfce7"/>
+      
+      <!-- Avatar emoji -->
+      <text x="67" y="52" text-anchor="middle" font-size="28">🐯</text>
+      
+      <!-- Online badge (+) -->
+      <circle cx="90" cy="18" r="10" fill="#22c55e" stroke="white" stroke-width="2"/>
+      <text x="90" y="23" text-anchor="middle" font-size="14" font-weight="bold" fill="white">+</text>
+      
+      <!-- "YOU" label -->
+      <text x="67" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#1f2937">
+        YOU
+      </text>
+      
+      <!-- "HOST" label -->
+      <text x="67" y="103" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#22c55e">
+        HOST
+      </text>
+    </g>
+    
+    <!-- Empty Slot - Top Right -->
+    <g transform="translate(161, 45)">
+      <rect width="135" height="115" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4"/>
+      
+      <!-- Question mark -->
+      <text x="67" y="55" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" fill="#d1d5db">
+        ?
+      </text>
+      
+      <!-- "EMPTY" label -->
+      <text x="67" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#9ca3af" letter-spacing="1">
+        EMPTY
+      </text>
+    </g>
+    
+    <!-- Empty Slot - Bottom Left -->
+    <g transform="translate(16, 170)">
+      <rect width="135" height="115" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4"/>
+      
+      <!-- Question mark -->
+      <text x="67" y="55" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" fill="#d1d5db">
+        ?
+      </text>
+      
+      <!-- "EMPTY" label -->
+      <text x="67" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#9ca3af" letter-spacing="1">
+        EMPTY
+      </text>
+    </g>
+    
+    <!-- Empty Slot - Bottom Right -->
+    <g transform="translate(161, 170)">
+      <rect width="135" height="115" rx="12" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5" stroke-dasharray="4,4"/>
+      
+      <!-- Question mark -->
+      <text x="67" y="55" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" fill="#d1d5db">
+        ?
+      </text>
+      
+      <!-- "EMPTY" label -->
+      <text x="67" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#9ca3af" letter-spacing="1">
+        EMPTY
+      </text>
+    </g>
+  </g>
+  
+  <!-- INVITE FRIENDS Button -->
+  <g transform="translate(24, 490)" filter="url(#cardShadow)">
+    <rect width="312" height="50" rx="25" fill="white"/>
+    
+    <!-- Share icon -->
+    <g transform="translate(100, 17)">
+      <circle cx="0" cy="8" r="3" fill="none" stroke="#7c3aed" stroke-width="1.5"/>
+      <circle cx="12" cy="0" r="3" fill="none" stroke="#7c3aed" stroke-width="1.5"/>
+      <circle cx="12" cy="16" r="3" fill="none" stroke="#7c3aed" stroke-width="1.5"/>
+      <line x1="2" y1="6" x2="10" y2="2" stroke="#7c3aed" stroke-width="1.5"/>
+      <line x1="2" y1="10" x2="10" y2="14" stroke="#7c3aed" stroke-width="1.5"/>
+    </g>
+    
+    <text x="185" y="31" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#7c3aed" letter-spacing="1">
+      INVITE FRIENDS
+    </text>
+  </g>
+  
+  <!-- START GAME Button (Purple - matching CREATE GAME) -->
+  <g transform="translate(24, 555)">
+    <rect width="312" height="56" rx="28" fill="url(#purpleBtn)"/>
+    <rect width="312" height="56" rx="28" fill="none" stroke="#9333ea" stroke-width="2"/>
+    <!-- Button shadow -->
+    <rect y="56" width="312" height="6" rx="3" fill="#581c87"/>
+    
+    <!-- Play icon -->
+    <polygon points="125,28 145,18 145,38" fill="white"/>
+    
+    <text x="195" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="white" letter-spacing="1">
+      START GAME
+    </text>
+  </g>
+  
+  <!-- LEAVE ROOM Button -->
+  <g transform="translate(24, 630)">
+    <rect width="312" height="46" rx="23" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="2"/>
+    
+    <!-- Exit icon -->
+    <g transform="translate(110, 15)">
+      <rect x="0" y="2" width="10" height="10" rx="2" fill="none" stroke="white" stroke-width="1.5"/>
+      <line x1="14" y1="7" x2="20" y2="7" stroke="white" stroke-width="1.5"/>
+      <polyline points="17,4 20,7 17,10" fill="none" stroke="white" stroke-width="1.5"/>
+    </g>
+    
+    <text x="185" y="29" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="white" letter-spacing="1">
+      LEAVE ROOM
+    </text>
+  </g>
+</svg>
