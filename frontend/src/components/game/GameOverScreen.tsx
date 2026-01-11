@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { soundService } from '../../services/soundService';
+import { useThemeStore } from '../../store/themeStore';
 
 // =============================================================================
 // TYPES
@@ -98,6 +99,8 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 }) => {
   const [showConfetti, setShowConfetti] = useState(true);
   const [animatedScore, setAnimatedScore] = useState(0);
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const isWinner = winner?.playerId === currentPlayerId;
   const isSoloGame = finalScores.length === 1;
 
@@ -186,7 +189,9 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       right: 0,
       bottom: 0,
       height: '100dvh',
-      background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+      background: isDark 
+        ? 'linear-gradient(135deg, #166534 0%, #854d0e 25%, #9a3412 50%, #991b1b 75%, #1e3a8a 100%)'
+        : 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -218,7 +223,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         {/* Winner Section - White card */}
         {winner && (
           <div style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '1rem',
             padding: '1.5rem',
             marginBottom: '0.75rem',
@@ -238,7 +243,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
             </h2>
             
             <div style={{
-              color: '#1f2937',
+              color: isDark ? '#f3f4f6' : '#1f2937',
               fontSize: '1.25rem',
               fontWeight: '600',
               marginBottom: '0.25rem',
@@ -251,7 +256,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
               fontWeight: 'bold',
               color: '#7c3aed',
             }}>
-              {animatedScore} <span style={{ fontSize: '1rem', color: '#6b7280' }}>points</span>
+              {animatedScore} <span style={{ fontSize: '1rem', color: isDark ? '#d1d5db' : '#6b7280' }}>points</span>
             </div>
             
             {isWinner && !isSoloGame && (
@@ -270,14 +275,14 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
         {/* Scoreboard (Multiplayer only) */}
         {!isSoloGame && finalScores.length > 1 && (
           <div style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '1rem',
             padding: '1rem',
             marginBottom: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           }}>
             <h3 style={{
-              color: '#6b7280',
+              color: isDark ? '#d1d5db' : '#6b7280',
               fontWeight: '600',
               textAlign: 'center',
               marginBottom: '0.75rem',
@@ -312,7 +317,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                         {getMedal(rank)}
                       </span>
                       <span style={{
-                        color: '#1f2937',
+                        color: isDark ? '#f3f4f6' : '#1f2937',
                         fontWeight: isCurrentPlayer ? '600' : '500',
                         fontSize: '0.875rem',
                       }}>
@@ -345,39 +350,39 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           marginBottom: '1rem',
         }}>
           <div style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '2rem',
             padding: '0.5rem 1rem',
             textAlign: 'center',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>{roundsPlayed}</div>
-            <div style={{ fontSize: '0.625rem', color: '#6b7280', textTransform: 'uppercase' }}>Rounds</div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937' }}>{roundsPlayed}</div>
+            <div style={{ fontSize: '0.625rem', color: isDark ? '#d1d5db' : '#6b7280', textTransform: 'uppercase' }}>Rounds</div>
           </div>
           <div style={{
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '2rem',
             padding: '0.5rem 1rem',
             textAlign: 'center',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}>
-            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937' }}>
               {finalScores.find(s => s.playerId === currentPlayerId)?.score || 0}
             </div>
-            <div style={{ fontSize: '0.625rem', color: '#6b7280', textTransform: 'uppercase' }}>Your Score</div>
+            <div style={{ fontSize: '0.625rem', color: isDark ? '#d1d5db' : '#6b7280', textTransform: 'uppercase' }}>Your Score</div>
           </div>
           {!isSoloGame && (
             <div style={{
-              backgroundColor: '#ffffff',
+              backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
               borderRadius: '2rem',
               padding: '0.5rem 1rem',
               textAlign: 'center',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937' }}>
                 #{finalScores.findIndex(s => s.playerId === currentPlayerId) + 1}
               </div>
-              <div style={{ fontSize: '0.625rem', color: '#6b7280', textTransform: 'uppercase' }}>Rank</div>
+              <div style={{ fontSize: '0.625rem', color: isDark ? '#d1d5db' : '#6b7280', textTransform: 'uppercase' }}>Rank</div>
             </div>
           )}
         </div>

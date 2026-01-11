@@ -16,6 +16,8 @@ import { CircularSimonBoard } from '../components/game/CircularSimonBoard';
 import { GameOverScreen } from '../components/game/GameOverScreen';
 import { Toast } from '../components/ui/Toast';
 import { MuteButton } from '../components/ui/MuteButton';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
+import { useThemeStore } from '../store/themeStore';
 
 // Avatar mapping
 const AVATAR_EMOJIS: Record<string, string> = {
@@ -71,6 +73,10 @@ export function WaitingRoomPage() {
   const [roomDifficulty, setRoomDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const lastCountdownValue = useRef<number | null>(null);
   const hasInitialized = useRef(false);
+  
+  // Theme
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   
   // Keep refs updated when values change
   useEffect(() => {
@@ -374,11 +380,18 @@ export function WaitingRoomPage() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+          background: isDark 
+            ? 'linear-gradient(135deg, #166534 0%, #854d0e 25%, #9a3412 50%, #991b1b 75%, #1e3a8a 100%)'
+            : 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
           padding: '0.75rem',
           overflow: 'hidden',
         }}
       >
+        {/* Theme Toggle - top right */}
+        <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 20, display: 'flex', gap: '0.5rem' }}>
+          <ThemeToggle />
+        </div>
+        
         {/* Mute Button */}
         <MuteButton />
         
@@ -477,7 +490,7 @@ export function WaitingRoomPage() {
           {isEliminated && (
             <div style={{
               width: '100%',
-              backgroundColor: '#ffffff',
+              backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
               border: '2px solid #ef4444',
               borderRadius: '0.75rem',
               padding: '0.625rem',
@@ -542,7 +555,9 @@ export function WaitingRoomPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+          background: isDark 
+            ? 'linear-gradient(135deg, #166534 0%, #854d0e 25%, #9a3412 50%, #991b1b 75%, #1e3a8a 100%)'
+            : 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
         }}
       >
         <div style={{ textAlign: 'center' }}>
@@ -579,9 +594,16 @@ export function WaitingRoomPage() {
         padding: '1rem',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+        background: isDark 
+          ? 'linear-gradient(135deg, #166534 0%, #854d0e 25%, #9a3412 50%, #991b1b 75%, #1e3a8a 100%)'
+          : 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
       }}
     >
+      {/* Theme Toggle - top right */}
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 20 }}>
+        <ThemeToggle />
+      </div>
+      
       {/* Toast notification */}
       {toast && (
         <Toast
@@ -620,7 +642,7 @@ export function WaitingRoomPage() {
         <div 
           style={{
             width: '100%',
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             padding: '0.75rem',
@@ -629,7 +651,7 @@ export function WaitingRoomPage() {
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: '0.7rem', color: '#6b7280', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>
+          <span style={{ fontSize: '0.7rem', color: isDark ? '#d1d5db' : '#6b7280', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>
             ROOM CODE
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -687,7 +709,7 @@ export function WaitingRoomPage() {
         <div 
           style={{
             width: '100%',
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             padding: '0.75rem',
@@ -695,7 +717,7 @@ export function WaitingRoomPage() {
         >
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 'bold', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '1rem' }}>👥</span>
               PLAYERS
             </span>
@@ -705,7 +727,7 @@ export function WaitingRoomPage() {
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: '600',
-              color: '#1f2937',
+              color: isDark ? '#f3f4f6' : '#1f2937',
             }}>
               {players.length} <span style={{ color: '#9ca3af' }}>/ {MAX_PLAYERS}</span>
             </span>
@@ -769,7 +791,7 @@ export function WaitingRoomPage() {
                     <span style={{ 
                       fontSize: '0.75rem', 
                       fontWeight: '600', 
-                      color: '#1f2937',
+                      color: isDark ? '#f3f4f6' : '#1f2937',
                       marginTop: '0.375rem',
                       textAlign: 'center',
                       maxWidth: '100%',
@@ -829,7 +851,7 @@ export function WaitingRoomPage() {
               width: '100%',
               padding: '0.75rem',
               borderRadius: '9999px',
-              backgroundColor: '#ffffff',
+              backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
               border: 'none',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               cursor: 'pointer',

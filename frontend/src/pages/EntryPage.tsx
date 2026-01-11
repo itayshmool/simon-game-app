@@ -10,6 +10,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createSession, joinGame } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
 import { SimonSplashScreen } from '../components/ui/SimonSplashScreen';
+import { ThemeToggle } from '../components/ui/ThemeToggle';
+import { useThemeStore } from '../store/themeStore';
 import type { Difficulty } from '../shared/types';
 
 // Avatar options
@@ -35,6 +37,8 @@ export function EntryPage() {
   
   const { setSession } = useAuthStore();
   const navigate = useNavigate();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   
   const isJoining = !!joinCode;
 
@@ -83,9 +87,16 @@ export function EntryPage() {
         padding: '1rem',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+        background: isDark 
+          ? 'linear-gradient(135deg, #166534 0%, #854d0e 25%, #9a3412 50%, #991b1b 75%, #1e3a8a 100%)'
+          : 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
       }}
     >
+      {/* Theme Toggle - top right */}
+      <div style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 20 }}>
+        <ThemeToggle />
+      </div>
+      
       {/* Content container */}
       <div 
         style={{
@@ -139,14 +150,14 @@ export function EntryPage() {
           <div 
             style={{
               width: '100%',
-              backgroundColor: '#ffffff',
+              backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
               borderRadius: '0.75rem',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               padding: '0.5rem 0.75rem',
             }}
           >
-            <p style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.75rem', margin: 0 }}>Joining game</p>
-            <p style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.25rem', color: '#1f2937', margin: '0.25rem 0 0 0' }}>{joinCode}</p>
+            <p style={{ textAlign: 'center', color: isDark ? '#d1d5db' : '#6b7280', fontSize: '0.75rem', margin: 0 }}>Joining game</p>
+            <p style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '1.25rem', color: isDark ? '#f3f4f6' : '#1f2937', margin: '0.25rem 0 0 0' }}>{joinCode}</p>
           </div>
         )}
         
@@ -154,13 +165,13 @@ export function EntryPage() {
         <div 
           style={{
             width: '100%',
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             padding: '0.75rem',
           }}
         >
-          <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
+          <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937', marginBottom: '0.5rem' }}>
             What's your name?
           </label>
           <input
@@ -173,11 +184,11 @@ export function EntryPage() {
             style={{
               width: '100%',
               padding: '0.625rem 0.75rem',
-              backgroundColor: '#f3f4f6',
-              border: '2px solid #e5e7eb',
+              backgroundColor: isDark ? '#2a2a2a' : '#f3f4f6',
+              border: `2px solid ${isDark ? '#3f3f3f' : '#e5e7eb'}`,
               borderRadius: '0.5rem',
               fontSize: '1rem',
-              color: '#1f2937',
+              color: isDark ? '#f3f4f6' : '#1f2937',
               outline: 'none',
               boxSizing: 'border-box',
             }}
@@ -188,13 +199,13 @@ export function EntryPage() {
         <div 
           style={{
             width: '100%',
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
             borderRadius: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             padding: '0.75rem',
           }}
         >
-          <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
+          <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937', marginBottom: '0.5rem' }}>
             Pick your avatar:
           </label>
           
@@ -238,7 +249,7 @@ export function EntryPage() {
                         justifyContent: 'center',
                         fontSize: '1.5rem',
                         transition: 'all 0.15s',
-                        border: isSelected ? '3px solid #22c55e' : '2px solid #e5e7eb',
+                        border: isSelected ? '3px solid #22c55e' : `2px solid ${isDark ? '#3f3f3f' : '#e5e7eb'}`,
                         backgroundColor: isSelected ? '#f0fdf4' : '#ffffff',
                         transform: isSelected ? 'scale(1.1)' : 'scale(1)',
                         boxShadow: isSelected ? '0 2px 8px rgba(34,197,94,0.3)' : 'none',
@@ -281,13 +292,13 @@ export function EntryPage() {
           <div 
             style={{
               width: '100%',
-              backgroundColor: '#ffffff',
+              backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
               borderRadius: '0.75rem',
               boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               padding: '0.75rem',
             }}
           >
-            <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
+            <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: isDark ? '#f3f4f6' : '#1f2937', marginBottom: '0.5rem' }}>
               Game Speed:
             </label>
             
@@ -307,7 +318,7 @@ export function EntryPage() {
                       justifyContent: 'center',
                       padding: '0.5rem 0.25rem',
                       borderRadius: '0.5rem',
-                      border: isSelected ? `3px solid ${diff.color}` : '2px solid #e5e7eb',
+                      border: isSelected ? `3px solid ${diff.color}` : `2px solid ${isDark ? '#3f3f3f' : '#e5e7eb'}`,
                       backgroundColor: isSelected ? `${diff.color}15` : '#ffffff',
                       cursor: 'pointer',
                       transition: 'all 0.15s',

@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 /* =============================================================================
+   THEME VARIABLES
+   ============================================================================= */
+
+:root {
+  /* Light mode (default) */
+  --color-background: #f8f7ff;
+  --color-background-gradient-start: #4ade80;
+  --color-background-gradient-end: #3b82f6;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f3f4f6;
+  --color-border: #e5e7eb;
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+}
+
+.dark {
+  /* Dark mode */
+  --color-background: #0f0f0f;
+  --color-background-gradient-start: #166534;
+  --color-background-gradient-end: #1e3a8a;
+  --color-surface: #1f1f1f;
+  --color-surface-secondary: #2a2a2a;
+  --color-border: #3f3f3f;
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted: #9ca3af;
+}
+
+/* =============================================================================
    MOBILE-FIRST CSS RULES
    Based on: .cursor/MOBILE_FIRST.md
    ============================================================================= */
@@ -17,6 +47,11 @@ body {
   /* Prevent overscroll bounce (iOS pull-to-refresh) */
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
+  
+  /* Theme colors */
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Prevent tap highlight flash on mobile */
