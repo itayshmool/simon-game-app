@@ -100,12 +100,13 @@ const ColorWedge: React.FC<WedgeProps> = ({
   innerRadius,
   outerRadius,
 }) => {
-  // DIMMED base colors (darker when inactive) and VERY BRIGHT when active
+  // DIMMED base colors (VERY dark when inactive) and NEON BRIGHT when active
+  // Increased contrast for arcade "pop" effect
   const colors: Record<Color, { dim: string; bright: string }> = {
-    green: { dim: '#1a7a28', bright: '#44ff66' },  // Dark green -> Neon green
-    red: { dim: '#8b1a1a', bright: '#ff4444' },    // Dark red -> Bright red
-    yellow: { dim: '#8b7a00', bright: '#ffff00' }, // Dark yellow -> Pure yellow
-    blue: { dim: '#0a3d6b', bright: '#44aaff' },   // Dark blue -> Bright blue
+    green: { dim: '#0d3d14', bright: '#44ff66' },  // Very dark green -> Neon green
+    red: { dim: '#4a0d0d', bright: '#ff4444' },    // Very dark red -> Bright red
+    yellow: { dim: '#4a4000', bright: '#ffff00' }, // Very dark yellow -> Pure yellow
+    blue: { dim: '#052040', bright: '#44aaff' },   // Very dark blue -> Bright blue
   };
 
   const wedgeColor = colors[color];
@@ -129,12 +130,12 @@ const ColorWedge: React.FC<WedgeProps> = ({
       onClick={disabled ? undefined : onClick}
       style={{
         cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'fill 0.1s ease, filter 0.1s ease, transform 0.1s ease',
+        transition: 'fill 0.08s ease, filter 0.08s ease, transform 0.08s ease',
         filter: isActive 
-          ? `brightness(1.5) drop-shadow(0 0 30px ${wedgeColor.bright}) drop-shadow(0 0 60px ${wedgeColor.bright})` 
+          ? `brightness(2) drop-shadow(0 0 40px ${wedgeColor.bright}) drop-shadow(0 0 80px ${wedgeColor.bright}) drop-shadow(0 0 120px ${wedgeColor.bright})` 
           : 'brightness(1)',
         transformOrigin: `${centerX}px ${centerY}px`,
-        transform: isActive ? 'scale(1.05)' : 'scale(1)',
+        transform: isActive ? 'scale(1.08)' : 'scale(1)',
         opacity: disabled ? 0.6 : 1,
       }}
       role="button"
@@ -360,12 +361,15 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
       {/* Status Message - clean, no box */}
       <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
         {isShowingSequence ? (
-          <p style={{ 
-            color: '#facc15', 
-            fontWeight: 'bold', 
-            fontSize: '1rem',
-            margin: 0,
-          }}>
+          <p 
+            className="watch-pattern-text"
+            style={{ 
+              color: '#facc15', 
+              fontWeight: 'bold', 
+              fontSize: '1rem',
+              margin: 0,
+            }}
+          >
             👀 Watch the pattern!
           </p>
         ) : (
@@ -555,6 +559,7 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
             onSubmit();
           }}
           disabled={!canSubmit}
+          className={canSubmit ? 'arcade-btn arcade-btn-green' : ''}
           style={{
             width: '100%',
             maxWidth: 'min(75vw, 280px)',
@@ -573,25 +578,6 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
               ? '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)'
               : 'none',
             opacity: canSubmit ? 1 : 0.5,
-            transition: 'transform 0.1s, box-shadow 0.1s',
-          }}
-          onMouseDown={(e) => {
-            if (canSubmit) {
-              (e.target as HTMLButtonElement).style.transform = 'translateY(2px)';
-              (e.target as HTMLButtonElement).style.boxShadow = '0 2px 0 0 #166534, 0 3px 6px rgba(22, 101, 52, 0.3)';
-            }
-          }}
-          onMouseUp={(e) => {
-            if (canSubmit) {
-              (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
-              (e.target as HTMLButtonElement).style.boxShadow = '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (canSubmit) {
-              (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
-              (e.target as HTMLButtonElement).style.boxShadow = '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)';
-            }
           }}
         >
           {canSubmit ? '✅ SUBMIT' : `${playerSequence.length}/${sequence.length} colors`}

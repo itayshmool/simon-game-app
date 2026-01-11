@@ -100,3 +100,101 @@ textarea {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* =============================================================================
+   ARCADE BUTTON EFFECTS
+   3D button press animation for game-like feel
+   ============================================================================= */
+
+/* Base arcade button - apply to buttons with box-shadow bottom edge */
+.arcade-btn {
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+  will-change: transform;
+}
+
+/* Press effect - button pushes down */
+.arcade-btn:active {
+  transform: translateY(3px) !important;
+}
+
+/* Green button press */
+.arcade-btn-green:active {
+  box-shadow: 0 1px 0 0 #166534, 0 2px 4px rgba(22, 101, 52, 0.3) !important;
+}
+
+/* Purple button press */
+.arcade-btn-purple:active {
+  box-shadow: 0 1px 0 0 #581c87, 0 2px 4px rgba(88, 28, 135, 0.3) !important;
+}
+
+/* Blue button press */
+.arcade-btn-blue:active {
+  box-shadow: 0 1px 0 0 #1d4ed8, 0 2px 4px rgba(29, 78, 216, 0.3) !important;
+}
+
+/* =============================================================================
+   ELIMINATED BANNER ANIMATION
+   Slide in from top with shake effect
+   ============================================================================= */
+
+@keyframes eliminated-entrance {
+  0% {
+    transform: translateY(-100%) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(0) scale(1.05);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(-8px) rotate(-2deg);
+  }
+  70% {
+    transform: translateX(8px) rotate(2deg);
+  }
+  80% {
+    transform: translateX(-4px) rotate(-1deg);
+  }
+  90% {
+    transform: translateX(4px) rotate(1deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0) scale(1);
+  }
+}
+
+.eliminated-banner {
+  animation: eliminated-entrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Skull bounce animation */
+@keyframes skull-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.skull-bounce {
+  display: inline-block;
+  animation: skull-bounce 1s ease-in-out infinite;
+}
+
+/* =============================================================================
+   WATCH PATTERN ANIMATION
+   Attention-grabbing pulse for "Watch the pattern!" message
+   ============================================================================= */
+
+@keyframes attention-pulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+  }
+  50% {
+    transform: scale(1.05);
+    text-shadow: 0 0 20px rgba(250, 204, 21, 0.8), 0 0 40px rgba(250, 204, 21, 0.4);
+  }
+}
+
+.watch-pattern-text {
+  animation: attention-pulse 1s ease-in-out infinite;
+  display: inline-block;
+}

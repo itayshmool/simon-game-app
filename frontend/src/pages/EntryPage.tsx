@@ -365,6 +365,7 @@ export function EntryPage() {
           type="button"
           onClick={handleSubmit}
           disabled={loading || displayName.length < 3}
+          className={loading || displayName.length < 3 ? '' : 'arcade-btn arcade-btn-purple'}
           style={{
             width: '100%',
             padding: '0.875rem',

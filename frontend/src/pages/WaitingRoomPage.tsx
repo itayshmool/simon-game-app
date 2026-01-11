@@ -17,6 +17,7 @@ import { GameOverScreen } from '../components/game/GameOverScreen';
 import { Toast } from '../components/ui/Toast';
 import { MuteButton } from '../components/ui/MuteButton';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
+import { ScorePop } from '../components/ui/ScorePop';
 import { useThemeStore } from '../store/themeStore';
 
 // Avatar mapping
@@ -71,12 +72,30 @@ export function WaitingRoomPage() {
   const [players, setPlayers] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [roomDifficulty, setRoomDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [scorePop, setScorePop] = useState<number | null>(null);
   const lastCountdownValue = useRef<number | null>(null);
+  const previousScoreRef = useRef<number>(0);
   const hasInitialized = useRef(false);
   
   // Theme
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
+  
+  // Score pop animation - detect score increases
+  useEffect(() => {
+    if (!playerId) return;
+    
+    const currentScore = scores[playerId] || 0;
+    const previousScore = previousScoreRef.current;
+    
+    if (currentScore > previousScore && previousScore > 0) {
+      // Score increased! Show the pop animation
+      const delta = currentScore - previousScore;
+      setScorePop(delta);
+    }
+    
+    previousScoreRef.current = currentScore;
+  }, [scores, playerId]);
   
   // Keep refs updated when values change
   useEffect(() => {
@@ -346,7 +365,19 @@ export function WaitingRoomPage() {
   if (isGameOver) {
     return (
       <>
-        <MuteButton />
+        {/* Control Bar - top right */}
+        <div style={{ 
+          position: 'fixed', 
+          top: '1rem', 
+          right: '1rem', 
+          zIndex: 100, 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: '0.5rem' 
+        }}>
+          <MuteButton />
+          <ThemeToggle />
+        </div>
         <GameOverScreen
           winner={gameWinner}
           finalScores={finalScores}
@@ -387,13 +418,27 @@ export function WaitingRoomPage() {
           overflow: 'hidden',
         }}
       >
-        {/* Theme Toggle - top right */}
-        <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', zIndex: 20, display: 'flex', gap: '0.5rem' }}>
+        {/* Control Bar - top right */}
+        <div style={{ 
+          position: 'absolute', 
+          top: '0.75rem', 
+          right: '0.75rem', 
+          zIndex: 20, 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: '0.5rem' 
+        }}>
+          <MuteButton />
           <ThemeToggle />
         </div>
         
-        {/* Mute Button */}
-        <MuteButton />
+        {/* Score Pop Animation */}
+        {scorePop !== null && (
+          <ScorePop 
+            points={scorePop} 
+            onComplete={() => setScorePop(null)} 
+          />
+        )}
         
         <div style={{ 
           width: '100%', 
@@ -488,16 +533,19 @@ export function WaitingRoomPage() {
           
           {/* Eliminated Banner */}
           {isEliminated && (
-            <div style={{
-              width: '100%',
-              backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
-              border: '2px solid #ef4444',
-              borderRadius: '0.75rem',
-              padding: '0.625rem',
-              textAlign: 'center',
-              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
-            }}>
-              <span style={{ fontSize: '1.25rem' }}>💀</span>
+            <div 
+              className="eliminated-banner"
+              style={{
+                width: '100%',
+                backgroundColor: isDark ? '#1f1f1f' : '#ffffff',
+                border: '2px solid #ef4444',
+                borderRadius: '0.75rem',
+                padding: '0.625rem',
+                textAlign: 'center',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              <span className="skull-bounce" style={{ fontSize: '1.25rem' }}>💀</span>
               <span style={{ color: '#dc2626', fontWeight: 'bold', marginLeft: '0.5rem', fontSize: '0.875rem' }}>
                 Eliminated - Spectating
               </span>
@@ -872,6 +920,7 @@ export function WaitingRoomPage() {
         {(isHost || players.length === 1) && (
             <button
               onClick={handleStartGame}
+              className="arcade-btn arcade-btn-purple"
             style={{
               width: '100%',
               padding: '0.875rem',

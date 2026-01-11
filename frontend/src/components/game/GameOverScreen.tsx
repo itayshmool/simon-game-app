@@ -392,6 +392,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           {/* Play Again Button - Green */}
           <button
             onClick={onPlayAgain}
+            className="arcade-btn arcade-btn-green"
             style={{
               width: '100%',
               padding: '0.875rem 1.5rem',
@@ -416,6 +417,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           {/* Home Button - Purple */}
           <button
             onClick={onGoHome}
+            className="arcade-btn arcade-btn-purple"
             style={{
               width: '100%',
               padding: '0.875rem 1.5rem',
@@ -440,6 +442,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           {/* Share Button - Blue */}
           <button
             onClick={handleShare}
+            className="arcade-btn arcade-btn-blue"
             style={{
               width: '100%',
               padding: '0.75rem 1.5rem',

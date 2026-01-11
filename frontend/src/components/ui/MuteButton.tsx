@@ -24,23 +24,26 @@ export const MuteButton: React.FC = () => {
   return (
     <button
       onClick={handleToggle}
-      className={`
-        fixed top-4 right-4 z-50
-        w-12 h-12 rounded-full
-        flex items-center justify-center
-        transition-all duration-200
-        ${isMuted 
-          ? 'bg-gray-700 hover:bg-gray-600' 
-          : 'bg-green-600 hover:bg-green-500'}
-        shadow-lg active:scale-95
-      `}
-      style={{ touchAction: 'manipulation' }}
+      style={{
+        width: '2.5rem',
+        height: '2.5rem',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isMuted ? 'rgba(107, 114, 128, 0.8)' : 'rgba(34, 197, 94, 0.8)',
+        backdropFilter: 'blur(8px)',
+        border: `2px solid ${isMuted ? 'rgba(107, 114, 128, 0.5)' : 'rgba(34, 197, 94, 0.5)'}`,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        cursor: 'pointer',
+        touchAction: 'manipulation',
+        transition: 'all 0.2s ease',
+        fontSize: '1.25rem',
+      }}
       aria-label={isMuted ? 'Unmute sounds' : 'Mute sounds'}
       title={isMuted ? 'Click to unmute' : 'Click to mute'}
     >
-      <span className="text-2xl">
-        {isMuted ? '🔇' : '🔊'}
-      </span>
+      {isMuted ? '🔇' : '🔊'}
     </button>
   );
 };
