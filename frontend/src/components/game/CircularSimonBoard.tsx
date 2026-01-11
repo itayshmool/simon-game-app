@@ -337,21 +337,38 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
     return emojis[color];
   };
 
+  // Timer colors inline
+  const timerColors = {
+    green: '#22c55e',
+    yellow: '#facc15',
+    red: '#ef4444',
+  };
+
   return (
-    <div className="game-area flex flex-col items-center gap-3 w-full">
-      {/* Round Display */}
-      <div className="text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
-          Round {round}
-        </h2>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      width: '100%',
+      gap: '0.5rem',
+    }}>
+      {/* Status Message - clean, no box */}
+      <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
         {isShowingSequence ? (
-          <div className="bg-yellow-500/20 border border-yellow-500 rounded-lg px-4 py-2 animate-pulse">
-            <p className="text-yellow-400 font-bold text-base">
-              👀 MEMORIZE THE PATTERN!
-            </p>
-          </div>
+          <p style={{ 
+            color: '#facc15', 
+            fontWeight: 'bold', 
+            fontSize: '1rem',
+            margin: 0,
+          }}>
+            👀 Watch the pattern!
+          </p>
         ) : (
-          <p className="text-xs sm:text-sm text-gray-300">
+          <p style={{ 
+            color: '#d1d5db', 
+            fontSize: '0.875rem',
+            margin: 0,
+          }}>
             {disabled 
               ? '👻 Spectating...' 
               : isInputPhase
@@ -361,32 +378,35 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
         )}
       </div>
 
-      {/* Timer Display */}
+      {/* LARGE Timer Display - Very prominent */}
       {isInputPhase && secondsRemaining > 0 && (
-        <div className="flex flex-col items-center">
-          <div 
-            className={`
-              font-bold transition-all duration-200
-              ${secondsRemaining > 10 ? 'text-3xl' : ''}
-              ${secondsRemaining > 5 && secondsRemaining <= 10 ? 'text-4xl' : ''}
-              ${secondsRemaining <= 5 ? 'text-5xl' : ''}
-              ${timerColor === 'green' ? 'text-green-400' : ''}
-              ${timerColor === 'yellow' ? 'text-yellow-400' : ''}
-              ${timerColor === 'red' ? 'text-red-400' : ''}
-              ${isTimerPulsing ? 'animate-pulse' : ''}
-            `}
-          >
+        <div style={{
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          borderRadius: '1rem',
+          padding: '0.5rem 1.5rem',
+          boxShadow: `0 0 20px ${timerColors[timerColor]}40`,
+          border: `3px solid ${timerColors[timerColor]}`,
+        }}>
+          <span style={{
+            fontSize: secondsRemaining <= 5 ? '2.5rem' : '2rem',
+            fontWeight: 'bold',
+            color: timerColors[timerColor],
+            animation: isTimerPulsing ? 'pulse 0.5s infinite' : 'none',
+          }}>
             {secondsRemaining}s
-          </div>
+          </span>
         </div>
       )}
 
       {/* SVG Circular Simon Board */}
-      <div className="relative w-full max-w-[min(85vw,320px)] mx-auto">
+      <div style={{ 
+        width: '100%', 
+        maxWidth: 'min(75vw, 280px)',
+        margin: '0 auto',
+      }}>
         <svg
           viewBox={`0 0 ${size} ${size}`}
-          className="w-full h-auto"
-          style={{ touchAction: 'manipulation' }}
+          style={{ width: '100%', height: 'auto', touchAction: 'manipulation' }}
         >
           {/* Background circle */}
           <circle
@@ -423,10 +443,9 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
             strokeWidth="3"
           />
 
-          {/* Center content - shows sequence counter during playback, or SIMON text */}
+          {/* Center content */}
           {isShowingSequence && sequenceIndex >= 0 ? (
             <>
-              {/* Sequence counter */}
               <text
                 x={centerX}
                 y={centerY + 8}
@@ -450,39 +469,78 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
               </text>
             </>
           ) : (
-            <text
-              x={centerX}
-              y={centerY + 6}
-              textAnchor="middle"
-              fill="white"
-              fontSize="18"
-              fontWeight="bold"
-              fontFamily="Arial, sans-serif"
-              letterSpacing="2"
-            >
-              SIMON
-            </text>
+            <>
+              <text
+                x={centerX}
+                y={centerY - 2}
+                textAnchor="middle"
+                fill="white"
+                fontSize="14"
+                fontWeight="bold"
+                fontFamily="Arial, sans-serif"
+                letterSpacing="2"
+              >
+                ROUND
+              </text>
+              <text
+                x={centerX}
+                y={centerY + 18}
+                textAnchor="middle"
+                fill="white"
+                fontSize="24"
+                fontWeight="bold"
+                fontFamily="Arial, sans-serif"
+              >
+                {round}
+              </text>
+            </>
           )}
         </svg>
       </div>
 
       {/* Player Sequence Display */}
-      {isInputPhase && playerSequence.length > 0 && (
-        <div className="bg-gray-700/80 rounded-lg p-2 w-full max-w-[min(85vw,320px)]">
-          <div className="flex justify-center items-center gap-1 min-h-[28px]">
-            {playerSequence.map((color, i) => (
-              <span key={i} className="text-xl">
-                {getColorEmoji(color)}
+      {isInputPhase && (
+        <div style={{
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          borderRadius: '0.75rem',
+          padding: '0.5rem 1rem',
+          width: '100%',
+          maxWidth: 'min(75vw, 280px)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '0.25rem',
+            minHeight: '1.75rem',
+          }}>
+            {playerSequence.length > 0 ? (
+              <>
+                {playerSequence.map((color, i) => (
+                  <span key={i} style={{ fontSize: '1.25rem' }}>
+                    {getColorEmoji(color)}
+                  </span>
+                ))}
+              </>
+            ) : (
+              <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                Tap colors to repeat
               </span>
-            ))}
-            <span className="text-gray-400 text-xs ml-2">
+            )}
+            <span style={{ 
+              color: '#6b7280', 
+              fontSize: '0.75rem', 
+              marginLeft: '0.5rem',
+              fontWeight: '600',
+            }}>
               {playerSequence.length}/{sequence.length}
             </span>
           </div>
         </div>
       )}
 
-      {/* Submit Button */}
+      {/* Submit Button - Prominent purple like other buttons */}
       {isInputPhase && (
         <button
           onClick={() => {
@@ -492,17 +550,46 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
             onSubmit();
           }}
           disabled={!canSubmit}
-          style={{ touchAction: 'manipulation' }}
-          className={`
-            w-full max-w-[min(85vw,320px)] px-6 py-3 rounded-xl font-bold text-base
-            min-h-[56px]
-            transition-all duration-100
-            ${canSubmit 
-              ? 'bg-green-500 hover:bg-green-600 active:bg-green-700 text-white cursor-pointer shadow-lg active:scale-95' 
-              : 'bg-gray-600 text-gray-400 cursor-not-allowed opacity-50'}
-          `}
+          style={{
+            width: '100%',
+            maxWidth: 'min(75vw, 280px)',
+            padding: '0.875rem 1.5rem',
+            borderRadius: '9999px',
+            fontWeight: 'bold',
+            fontSize: '1.125rem',
+            border: 'none',
+            cursor: canSubmit ? 'pointer' : 'not-allowed',
+            touchAction: 'manipulation',
+            background: canSubmit 
+              ? 'linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #15803d 100%)'
+              : '#6b7280',
+            color: '#ffffff',
+            boxShadow: canSubmit 
+              ? '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)'
+              : 'none',
+            opacity: canSubmit ? 1 : 0.5,
+            transition: 'transform 0.1s, box-shadow 0.1s',
+          }}
+          onMouseDown={(e) => {
+            if (canSubmit) {
+              (e.target as HTMLButtonElement).style.transform = 'translateY(2px)';
+              (e.target as HTMLButtonElement).style.boxShadow = '0 2px 0 0 #166534, 0 3px 6px rgba(22, 101, 52, 0.3)';
+            }
+          }}
+          onMouseUp={(e) => {
+            if (canSubmit) {
+              (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
+              (e.target as HTMLButtonElement).style.boxShadow = '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (canSubmit) {
+              (e.target as HTMLButtonElement).style.transform = 'translateY(0)';
+              (e.target as HTMLButtonElement).style.boxShadow = '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)';
+            }
+          }}
         >
-          {canSubmit ? '✅ SUBMIT' : `⏳ ${playerSequence.length}/${sequence.length}`}
+          {canSubmit ? '✅ SUBMIT' : `${playerSequence.length}/${sequence.length} colors`}
         </button>
       )}
     </div>

@@ -45,7 +45,6 @@ export function WaitingRoomPage() {
     playerSequence,
     canSubmit,
     lastResult,
-    message,
     secondsRemaining,
     timerColor,
     isTimerPulsing,
@@ -384,37 +383,38 @@ export function WaitingRoomPage() {
           gap: '0.5rem',
           height: '100%',
         }}>
-          {/* SCOREBOARD - 2x2 Grid (matches waiting room style) */}
+          {/* SCOREBOARD - Compact 2x2 Grid */}
           <div style={{
             width: '100%',
             backgroundColor: '#ffffff',
             borderRadius: '0.75rem',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            padding: '0.625rem',
+            padding: '0.5rem',
+            flexShrink: 0,
           }}>
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: '0.5rem',
+              gap: '0.375rem',
             }}>
               {playerSlots.slice(0, 4).map((player, index) => {
                 if (!player) {
-                  // Empty slot
+                  // Empty slot - more compact
                   return (
                     <div
                       key={`empty-${index}`}
                       style={{
                         backgroundColor: '#f3f4f6',
-                        borderRadius: '0.75rem',
-                        padding: '0.625rem',
+                        borderRadius: '0.5rem',
+                        padding: '0.375rem 0.5rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        minHeight: '3rem',
-                        border: '2px dashed #d1d5db',
+                        minHeight: '2.25rem',
+                        border: '1px dashed #d1d5db',
                       }}
                     >
-                      <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>Empty</span>
+                      <span style={{ color: '#9ca3af', fontSize: '0.7rem' }}>Empty</span>
                     </div>
                   );
                 }
@@ -430,47 +430,47 @@ export function WaitingRoomPage() {
                     key={player.id}
                     style={{
                       backgroundColor: isCurrentPlayer ? '#dbeafe' : '#f9fafb',
-                      borderRadius: '0.75rem',
-                      padding: '0.625rem',
+                      borderRadius: '0.5rem',
+                      padding: '0.375rem 0.5rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      border: isCurrentPlayer ? '2px solid #3b82f6' : '2px solid #e5e7eb',
+                      border: isCurrentPlayer ? '2px solid #3b82f6' : '1px solid #e5e7eb',
                       opacity: isPlayerEliminated ? 0.5 : 1,
                     }}
                   >
                     <span style={{ 
                       color: '#1f2937', 
-                      fontSize: '0.8rem',
+                      fontSize: '0.75rem',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.375rem',
+                      gap: '0.25rem',
                       overflow: 'hidden',
                     }}>
-                      <span style={{ fontSize: '1.25rem' }}>{avatarEmoji}</span>
+                      <span style={{ fontSize: '1rem' }}>{avatarEmoji}</span>
                       <span style={{ 
                         overflow: 'hidden', 
                         textOverflow: 'ellipsis', 
                         whiteSpace: 'nowrap',
-                        maxWidth: '4rem',
+                        maxWidth: '3.5rem',
                         fontWeight: isCurrentPlayer ? '600' : '500',
                       }}>
                         {isCurrentPlayer ? 'You' : player.displayName}
                       </span>
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                       <span style={{ 
                         color: '#7c3aed', 
-                        fontSize: '0.75rem', 
+                        fontSize: '0.7rem', 
                         fontWeight: 'bold',
                       }}>
                         {score}pt
                       </span>
                       {hasSubmitted && isInputPhase && (
-                        <span style={{ color: '#22c55e', fontSize: '0.875rem', fontWeight: 'bold' }}>✓</span>
+                        <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 'bold' }}>✓</span>
                       )}
                       {isPlayerEliminated && (
-                        <span style={{ fontSize: '0.875rem' }}>💀</span>
+                        <span style={{ fontSize: '0.75rem' }}>💀</span>
                       )}
                     </div>
                   </div>
@@ -497,8 +497,16 @@ export function WaitingRoomPage() {
             </div>
           )}
           
-          {/* Simon Board */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', width: '100%' }}>
+          {/* Simon Board - takes remaining space */}
+          <div style={{ 
+            flex: 1, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            width: '100%',
+            minHeight: 0, // Important for flex shrinking
+            overflow: 'hidden',
+          }}>
             <CircularSimonBoard
               sequence={currentSequence}
               round={currentRound}
@@ -518,26 +526,6 @@ export function WaitingRoomPage() {
               timerColor={timerColor}
               isTimerPulsing={isTimerPulsing}
             />
-          </div>
-          
-          {/* Message Display */}
-          <div style={{ 
-            textAlign: 'center', 
-            paddingBottom: '0.5rem',
-            width: '100%',
-            backgroundColor: 'rgba(255,255,255,0.95)',
-            borderRadius: '0.75rem',
-            padding: '0.625rem 1rem',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          }}>
-            <p style={{ 
-              color: '#1f2937', 
-              fontSize: '0.875rem', 
-              fontWeight: '600',
-              margin: 0,
-            }}>
-              {message}
-            </p>
           </div>
         </div>
       </div>
