@@ -152,7 +152,7 @@ export class GameService {
   /**
    * Create a new game room with the host player
    */
-  createRoom(hostInfo: PlayerInfo): GameRoom {
+  createRoom(hostInfo: PlayerInfo, difficulty: 'easy' | 'medium' | 'hard' = 'medium'): GameRoom {
     const existingCodes = new Set(this.rooms.keys());
     const gameCode = generateGameCode(existingCodes);
     
@@ -172,6 +172,7 @@ export class GameService {
       status: 'waiting',
       createdAt: new Date(),
       gameState: null,
+      difficulty,
     };
 
     this.rooms.set(gameCode, room);

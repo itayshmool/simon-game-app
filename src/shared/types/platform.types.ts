@@ -44,6 +44,11 @@ export type RoomStatus =
   | 'finished';   // Game ended
 
 /**
+ * Difficulty levels for Simon Says
+ */
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+/**
  * Game room container
  */
 export interface GameRoom {
@@ -52,6 +57,7 @@ export interface GameRoom {
   status: RoomStatus;            // Lifecycle state
   createdAt: Date;               // For cleanup
   gameState: unknown;            // Game-specific state (defined in game.types.ts)
+  difficulty: Difficulty;        // Game speed setting (easy/medium/hard)
 }
 
 // =============================================================================

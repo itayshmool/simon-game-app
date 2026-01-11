@@ -240,18 +240,70 @@ export interface SimonClientEvents {
   }) => void;
 }
 
+import type { Difficulty } from './platform.types';
+
 /**
- * Simon Says constants
+ * Difficulty settings - timing for each level
+ */
+export const DIFFICULTY_SETTINGS: Record<Difficulty, {
+  showColorDurationMs: number;   // How long each color shows
+  showColorGapMs: number;        // Gap between colors
+  initialTimeoutMs: number;      // Input time for round 1
+  timeoutDecrementMs: number;    // Decrease per round
+  minTimeoutMs: number;          // Minimum input time
+}> = {
+  easy: {
+    showColorDurationMs: 900,      // Slow - 900ms per color
+    showColorGapMs: 300,           // 300ms gap
+    initialTimeoutMs: 10000,       // 10 seconds to input
+    timeoutDecrementMs: 200,       // Decrease by 200ms each round
+    minTimeoutMs: 3000,            // Minimum 3 seconds
+  },
+  medium: {
+    showColorDurationMs: 600,      // Normal - 600ms per color
+    showColorGapMs: 200,           // 200ms gap
+    initialTimeoutMs: 5000,        // 5 seconds to input
+    timeoutDecrementMs: 250,       // Decrease by 250ms each round
+    minTimeoutMs: 1500,            // Minimum 1.5 seconds
+  },
+  hard: {
+    showColorDurationMs: 350,      // Fast - 350ms per color
+    showColorGapMs: 150,           // 150ms gap
+    initialTimeoutMs: 4000,        // 4 seconds to input
+    timeoutDecrementMs: 300,       // Decrease by 300ms each round
+    minTimeoutMs: 1000,            // Minimum 1 second
+  },
+};
+
+/**
+ * Simon Says constants (uses medium difficulty by default for backwards compatibility)
  */
 export const SIMON_CONSTANTS = {
   INITIAL_SEQUENCE_LENGTH: 1,
   SEQUENCE_INCREMENT: 1,
-  INITIAL_TIMEOUT_MS: 5000,          // 5 seconds
-  TIMEOUT_DECREMENT_MS: 250,          // Decrease by 250ms each round
-  MIN_TIMEOUT_MS: 1500,               // Minimum 1.5 seconds
-  SHOW_COLOR_DURATION_MS: 600,        // How long each color shows
-  SHOW_COLOR_GAP_MS: 200,             // Gap between colors
+  // Default timing (medium difficulty)
+  INITIAL_TIMEOUT_MS: DIFFICULTY_SETTINGS.medium.initialTimeoutMs,
+  TIMEOUT_DECREMENT_MS: DIFFICULTY_SETTINGS.medium.timeoutDecrementMs,
+  MIN_TIMEOUT_MS: DIFFICULTY_SETTINGS.medium.minTimeoutMs,
+  SHOW_COLOR_DURATION_MS: DIFFICULTY_SETTINGS.medium.showColorDurationMs,
+  SHOW_COLOR_GAP_MS: DIFFICULTY_SETTINGS.medium.showColorGapMs,
 } as const;
+
+/**
+ * Get Simon constants for a specific difficulty
+ */
+export function getSimonConstantsForDifficulty(difficulty: Difficulty = 'medium') {
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+  return {
+    INITIAL_SEQUENCE_LENGTH: 1,
+    SEQUENCE_INCREMENT: 1,
+    INITIAL_TIMEOUT_MS: settings.initialTimeoutMs,
+    TIMEOUT_DECREMENT_MS: settings.timeoutDecrementMs,
+    MIN_TIMEOUT_MS: settings.minTimeoutMs,
+    SHOW_COLOR_DURATION_MS: settings.showColorDurationMs,
+    SHOW_COLOR_GAP_MS: settings.showColorGapMs,
+  };
+}
 
 // =============================================================================
 // UNION TYPES
