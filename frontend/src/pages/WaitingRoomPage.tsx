@@ -367,7 +367,7 @@ export function WaitingRoomPage() {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #312e81 0%, #581c87 50%, #831843 100%)',
+          background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
           padding: '0.75rem',
           overflow: 'hidden',
         }}
@@ -384,17 +384,18 @@ export function WaitingRoomPage() {
           gap: '0.5rem',
           height: '100%',
         }}>
-          {/* SCOREBOARD - 2x2 Grid */}
+          {/* SCOREBOARD - 2x2 Grid (matches waiting room style) */}
           <div style={{
             width: '100%',
-            backgroundColor: 'rgba(31, 41, 55, 0.95)',
-            borderRadius: '1rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
             padding: '0.625rem',
           }}>
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
-              gap: '0.375rem',
+              gap: '0.5rem',
             }}>
               {playerSlots.slice(0, 4).map((player, index) => {
                 if (!player) {
@@ -403,16 +404,17 @@ export function WaitingRoomPage() {
                     <div
                       key={`empty-${index}`}
                       style={{
-                        backgroundColor: 'rgba(55, 65, 81, 0.5)',
-                        borderRadius: '0.5rem',
-                        padding: '0.5rem 0.625rem',
+                        backgroundColor: '#f3f4f6',
+                        borderRadius: '0.75rem',
+                        padding: '0.625rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        minHeight: '2.5rem',
+                        minHeight: '3rem',
+                        border: '2px dashed #d1d5db',
                       }}
                     >
-                      <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>Empty</span>
+                      <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>Empty</span>
                     </div>
                   );
                 }
@@ -427,46 +429,48 @@ export function WaitingRoomPage() {
                   <div
                     key={player.id}
                     style={{
-                      backgroundColor: isCurrentPlayer ? '#2563eb' : '#374151',
-                      borderRadius: '0.5rem',
-                      padding: '0.5rem 0.625rem',
+                      backgroundColor: isCurrentPlayer ? '#dbeafe' : '#f9fafb',
+                      borderRadius: '0.75rem',
+                      padding: '0.625rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      border: isCurrentPlayer ? '2px solid #3b82f6' : '2px solid #e5e7eb',
                       opacity: isPlayerEliminated ? 0.5 : 1,
                     }}
                   >
                     <span style={{ 
-                      color: 'white', 
-                      fontSize: '0.75rem',
+                      color: '#1f2937', 
+                      fontSize: '0.8rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.375rem',
                       overflow: 'hidden',
                     }}>
-                      <span>{avatarEmoji}</span>
+                      <span style={{ fontSize: '1.25rem' }}>{avatarEmoji}</span>
                       <span style={{ 
                         overflow: 'hidden', 
                         textOverflow: 'ellipsis', 
                         whiteSpace: 'nowrap',
                         maxWidth: '4rem',
+                        fontWeight: isCurrentPlayer ? '600' : '500',
                       }}>
                         {isCurrentPlayer ? 'You' : player.displayName}
                       </span>
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
                       <span style={{ 
-                        color: 'white', 
-                        fontSize: '0.7rem', 
+                        color: '#7c3aed', 
+                        fontSize: '0.75rem', 
                         fontWeight: 'bold',
                       }}>
                         {score}pt
                       </span>
                       {hasSubmitted && isInputPhase && (
-                        <span style={{ color: '#4ade80', fontSize: '0.75rem' }}>✓</span>
+                        <span style={{ color: '#22c55e', fontSize: '0.875rem', fontWeight: 'bold' }}>✓</span>
                       )}
                       {isPlayerEliminated && (
-                        <span style={{ fontSize: '0.75rem' }}>💀</span>
+                        <span style={{ fontSize: '0.875rem' }}>💀</span>
                       )}
                     </div>
                   </div>
@@ -479,14 +483,15 @@ export function WaitingRoomPage() {
           {isEliminated && (
             <div style={{
               width: '100%',
-              backgroundColor: 'rgba(239, 68, 68, 0.2)',
+              backgroundColor: '#ffffff',
               border: '2px solid #ef4444',
               borderRadius: '0.75rem',
-              padding: '0.5rem',
+              padding: '0.625rem',
               textAlign: 'center',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
             }}>
-              <span style={{ fontSize: '1.5rem' }}>💀</span>
-              <span style={{ color: 'white', fontWeight: 'bold', marginLeft: '0.5rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>💀</span>
+              <span style={{ color: '#dc2626', fontWeight: 'bold', marginLeft: '0.5rem', fontSize: '0.875rem' }}>
                 Eliminated - Spectating
               </span>
             </div>
@@ -520,11 +525,15 @@ export function WaitingRoomPage() {
             textAlign: 'center', 
             paddingBottom: '0.5rem',
             width: '100%',
+            backgroundColor: 'rgba(255,255,255,0.95)',
+            borderRadius: '0.75rem',
+            padding: '0.625rem 1rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           }}>
             <p style={{ 
-              color: 'white', 
+              color: '#1f2937', 
               fontSize: '0.875rem', 
-              fontWeight: '500',
+              fontWeight: '600',
               margin: 0,
             }}>
               {message}
