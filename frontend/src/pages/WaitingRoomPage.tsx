@@ -650,28 +650,30 @@ export function WaitingRoomPage() {
           </div>
         </div>
         
-        {/* INVITE FRIENDS Button */}
-        <button
-          onClick={shareGame}
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            borderRadius: '9999px',
-            backgroundColor: '#ffffff',
-            border: 'none',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <span style={{ fontSize: '1rem' }}>📤</span>
-          <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#7c3aed', letterSpacing: '0.05em' }}>
-            INVITE FRIENDS
-          </span>
-        </button>
+        {/* INVITE FRIENDS Button (host only) */}
+        {isHost && (
+          <button
+            onClick={shareGame}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: '9999px',
+              backgroundColor: '#ffffff',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <span style={{ fontSize: '1rem' }}>📤</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: '600', color: '#7c3aed', letterSpacing: '0.05em' }}>
+              INVITE FRIENDS
+            </span>
+          </button>
+        )}
         
         {/* START GAME Button (host only, or solo player) */}
         {(isHost || players.length === 1) && (
