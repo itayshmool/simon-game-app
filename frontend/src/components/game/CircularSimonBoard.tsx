@@ -27,6 +27,9 @@ interface CircularSimonBoardProps {
   secondsRemaining: number;
   timerColor: 'green' | 'yellow' | 'red';
   isTimerPulsing: boolean;
+  // Difficulty timing
+  colorDurationMs?: number;
+  colorGapMs?: number;
 }
 
 // =============================================================================
@@ -163,6 +166,8 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
   secondsRemaining,
   timerColor,
   isTimerPulsing,
+  colorDurationMs = 600,
+  colorGapMs = 200,
 }) => {
   const [activeColor, setActiveColor] = useState<Color | null>(null);
 
@@ -240,11 +245,11 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
     }
     
     console.log(`🎨 ANIMATION START: Round ${currentRound}, Length: ${sequenceLength}, Colors:`, sequenceToShow);
+    console.log(`🎨 Timing: ${colorDurationMs}ms show, ${colorGapMs}ms gap`);
 
-    // CRITICAL: These MUST match backend SIMON_CONSTANTS in game.types.ts
-    // Backend: SHOW_COLOR_DURATION_MS = 600, SHOW_COLOR_GAP_MS = 200
-    const SHOW_DURATION = 600;  // How long each color stays lit
-    const SHOW_GAP = 200;       // Gap between colors (all dark)
+    // Use difficulty-based timing from server
+    const SHOW_DURATION = colorDurationMs;  // How long each color stays lit
+    const SHOW_GAP = colorGapMs;            // Gap between colors (all dark)
 
     let currentIndex = 0;
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -308,7 +313,7 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
       setActiveColor(null);
       setSequenceIndex(-1);
     };
-  }, [isShowingSequence, sequence, round]); // Dependencies: re-run when any of these change
+  }, [isShowingSequence, sequence, round, colorDurationMs, colorGapMs]); // Dependencies: re-run when any of these change
 
   // Handle color button click
   const handleColorClick = (color: Color) => {

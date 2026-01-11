@@ -20,6 +20,10 @@ interface SimonStore {
   currentSequence: Color[];
   currentRound: number;
   
+  // Difficulty timing (from server)
+  colorDurationMs: number;
+  colorGapMs: number;
+  
   // Input phase state
   isInputPhase: boolean;
   playerSequence: Color[];
@@ -82,6 +86,8 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
   isShowingSequence: false,
   currentSequence: [],
   currentRound: 1,
+  colorDurationMs: 600,  // Default medium
+  colorGapMs: 200,       // Default medium
   isInputPhase: false,
   playerSequence: [],
   canSubmit: false,
@@ -137,8 +143,13 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
       console.log(`📨 Received event: ${eventName}`, args);
     });
     
-    // Listen for sequence display
-    socket.on('simon:show_sequence', (data: { round: number; sequence: Color[] }) => {
+    // Listen for sequence display (includes difficulty timing)
+    socket.on('simon:show_sequence', (data: { 
+      round: number; 
+      sequence: Color[];
+      colorDurationMs?: number;
+      colorGapMs?: number;
+    }) => {
       console.log('🎨🎨🎨 Received show_sequence:', data);
       
       set({
@@ -147,6 +158,9 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
         isShowingSequence: true,
         message: `Round ${data.round} - Watch the sequence!`,
         isGameActive: true,
+        // Store difficulty timing (defaults for backwards compatibility)
+        colorDurationMs: data.colorDurationMs || 600,
+        colorGapMs: data.colorGapMs || 200,
       });
     });
     

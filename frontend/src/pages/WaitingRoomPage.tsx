@@ -54,6 +54,8 @@ export function WaitingRoomPage() {
     isGameOver,
     gameWinner,
     finalScores,
+    colorDurationMs,
+    colorGapMs,
     initializeListeners,
     cleanup,
     addColorToSequence,
@@ -66,6 +68,7 @@ export function WaitingRoomPage() {
   const [isHost, setIsHost] = useState(session?.isHost || false);
   const [players, setPlayers] = useState<any[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [roomDifficulty, setRoomDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const lastCountdownValue = useRef<number | null>(null);
   const hasInitialized = useRef(false);
   
@@ -118,6 +121,7 @@ export function WaitingRoomPage() {
       console.log('📦 Initial room state:', room);
       setPlayers(room.players || []);
       setRoomStatus(room.status);
+      setRoomDifficulty(room.difficulty || 'medium');
       
       // Check if we're the host - use ref for latest playerId
       const currentPlayerId = playerIdRef.current;
@@ -141,6 +145,10 @@ export function WaitingRoomPage() {
         
         if (room.status) {
           setRoomStatus(room.status);
+        }
+        
+        if (room.difficulty) {
+          setRoomDifficulty(room.difficulty);
         }
         
         // Check if we're the host - use ref for latest playerId
@@ -269,7 +277,7 @@ export function WaitingRoomPage() {
       setToast({ message: 'Failed to copy code', type: 'error' });
     }
   };
-  
+
   // Share game using native share API (mobile-friendly)
   const shareGame = async () => {
     if (!gameCode) return;
@@ -438,12 +446,12 @@ export function WaitingRoomPage() {
             <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
               {players.filter(p => p.id !== playerId).map(player => {
                 const avatarEmoji = AVATAR_EMOJIS[player.avatarId] || player.avatar || '🎮';
-                const score = scores[player.id] || 0;
-                const hasSubmitted = submittedPlayers.includes(player.id);
-                
-                return (
-                  <div 
-                    key={player.id}
+                  const score = scores[player.id] || 0;
+                  const hasSubmitted = submittedPlayers.includes(player.id);
+                  
+                  return (
+                    <div
+                      key={player.id}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -458,12 +466,12 @@ export function WaitingRoomPage() {
                     <span style={{ color: '#ffffff', fontSize: '0.7rem', fontWeight: '600' }}>
                       {score}
                       {hasSubmitted && isInputPhase && <span style={{ color: '#4ade80' }}>✓</span>}
-                    </span>
-                  </div>
-                );
-              })}
+                        </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
           
           {/* Eliminated Banner */}
           {isEliminated && (
@@ -511,6 +519,8 @@ export function WaitingRoomPage() {
               secondsRemaining={secondsRemaining}
               timerColor={timerColor}
               isTimerPulsing={isTimerPulsing}
+              colorDurationMs={colorDurationMs}
+              colorGapMs={colorGapMs}
             />
           </div>
         </div>
@@ -647,6 +657,30 @@ export function WaitingRoomPage() {
               📋
             </button>
           </div>
+          
+          {/* Difficulty Badge */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.375rem',
+            marginTop: '0.5rem',
+            padding: '0.25rem 0.625rem',
+            backgroundColor: roomDifficulty === 'easy' ? '#dcfce7' : roomDifficulty === 'hard' ? '#fee2e2' : '#fef3c7',
+            borderRadius: '9999px',
+          }}>
+            <span style={{ fontSize: '0.875rem' }}>
+              {roomDifficulty === 'easy' ? '🐢' : roomDifficulty === 'hard' ? '🚀' : '🐇'}
+            </span>
+            <span style={{ 
+              fontSize: '0.7rem', 
+              fontWeight: '600',
+              color: roomDifficulty === 'easy' ? '#166534' : roomDifficulty === 'hard' ? '#b91c1c' : '#92400e',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              {roomDifficulty}
+            </span>
+          </div>
         </div>
         
         {/* Players Card */}
@@ -691,8 +725,8 @@ export function WaitingRoomPage() {
               if (player) {
                 // Filled slot
                 return (
-                  <div
-                    key={player.id}
+              <div 
+                key={player.id} 
                     style={{
                       backgroundColor: isCurrentPlayer ? '#f0fdf4' : '#f9fafb',
                       border: isCurrentPlayer ? '2px solid #22c55e' : '1px solid #e5e7eb',
@@ -779,8 +813,8 @@ export function WaitingRoomPage() {
                     <span style={{ fontSize: '1.5rem', color: '#d1d5db' }}>?</span>
                     <span style={{ fontSize: '0.625rem', color: '#9ca3af', marginTop: '0.25rem', letterSpacing: '0.05em' }}>
                       EMPTY
-                    </span>
-                  </div>
+                </span>
+              </div>
                 );
               }
             })}
@@ -814,8 +848,8 @@ export function WaitingRoomPage() {
         
         {/* START GAME Button (host only, or solo player) */}
         {(isHost || players.length === 1) && (
-          <button
-            onClick={handleStartGame}
+            <button
+              onClick={handleStartGame}
             style={{
               width: '100%',
               padding: '0.875rem',
@@ -836,7 +870,7 @@ export function WaitingRoomPage() {
           >
             <span style={{ fontSize: '1.25rem' }}>▶️</span>
             START GAME
-          </button>
+            </button>
         )}
         
         {/* Waiting for host message */}
