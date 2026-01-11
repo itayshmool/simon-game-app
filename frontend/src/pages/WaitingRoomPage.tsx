@@ -349,92 +349,186 @@ export function WaitingRoomPage() {
 
   // Render game board if active
   if (roomStatus === 'active' && isGameActive) {
+    // Create player slots (pad to 4 for grid)
+    const playerSlots = [...players];
+    while (playerSlots.length < 4) {
+      playerSlots.push(null);
+    }
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-2 sm:p-4">
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '100dvh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #312e81 0%, #581c87 50%, #831843 100%)',
+          padding: '0.75rem',
+          overflow: 'hidden',
+        }}
+      >
         {/* Mute Button */}
         <MuteButton />
         
-        <div className="flex flex-col items-center w-full max-w-md">
-          {/* Step 4: Scoreboard */}
-          {isGameActive && Object.keys(scores).length > 0 && (
-            <div className="bg-gray-800 rounded-xl sm:rounded-2xl p-2 sm:p-3 mb-3 w-full">
-              <div className="space-y-1">
-                {players.map((player) => {
-                  const score = scores[player.id] || 0;
-                  const hasSubmitted = submittedPlayers.includes(player.id);
-                  const isCurrentPlayer = player.id === playerId;
-                  
+        <div style={{ 
+          width: '100%', 
+          maxWidth: '24rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '0.5rem',
+          height: '100%',
+        }}>
+          {/* SCOREBOARD - 2x2 Grid */}
+          <div style={{
+            width: '100%',
+            backgroundColor: 'rgba(31, 41, 55, 0.95)',
+            borderRadius: '1rem',
+            padding: '0.625rem',
+          }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0.375rem',
+            }}>
+              {playerSlots.slice(0, 4).map((player, index) => {
+                if (!player) {
+                  // Empty slot
                   return (
                     <div
-                      key={player.id}
-                      className={`flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 rounded ${
-                        isCurrentPlayer ? 'bg-blue-600' : 'bg-gray-700'
-                      }`}
+                      key={`empty-${index}`}
+                      style={{
+                        backgroundColor: 'rgba(55, 65, 81, 0.5)',
+                        borderRadius: '0.5rem',
+                        padding: '0.5rem 0.625rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '2.5rem',
+                      }}
                     >
-                      <span className="text-white text-xs sm:text-sm flex items-center gap-1 sm:gap-2">
-                        <span>{player.avatar}</span>
-                        <span>{player.displayName}</span>
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white text-xs sm:text-sm font-bold">
-                          {score} pts
-                        </span>
-                        {hasSubmitted && isInputPhase && (
-                          <span className="text-green-400 text-xs">✓</span>
-                        )}
-                      </div>
+                      <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>Empty</span>
                     </div>
                   );
-                })}
-              </div>
+                }
+                
+                const score = scores[player.id] || 0;
+                const hasSubmitted = submittedPlayers.includes(player.id);
+                const isCurrentPlayer = player.id === playerId;
+                const isPlayerEliminated = false; // TODO: get from playerStatuses
+                const avatarEmoji = AVATAR_EMOJIS[player.avatarId] || player.avatar || '🎮';
+                
+                return (
+                  <div
+                    key={player.id}
+                    style={{
+                      backgroundColor: isCurrentPlayer ? '#2563eb' : '#374151',
+                      borderRadius: '0.5rem',
+                      padding: '0.5rem 0.625rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      opacity: isPlayerEliminated ? 0.5 : 1,
+                    }}
+                  >
+                    <span style={{ 
+                      color: 'white', 
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                      overflow: 'hidden',
+                    }}>
+                      <span>{avatarEmoji}</span>
+                      <span style={{ 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap',
+                        maxWidth: '4rem',
+                      }}>
+                        {isCurrentPlayer ? 'You' : player.displayName}
+                      </span>
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <span style={{ 
+                        color: 'white', 
+                        fontSize: '0.7rem', 
+                        fontWeight: 'bold',
+                      }}>
+                        {score}pt
+                      </span>
+                      {hasSubmitted && isInputPhase && (
+                        <span style={{ color: '#4ade80', fontSize: '0.75rem' }}>✓</span>
+                      )}
+                      {isPlayerEliminated && (
+                        <span style={{ fontSize: '0.75rem' }}>💀</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-          
-          {/* Step 4: Eliminated Message */}
-          {isEliminated && (
-            <div className="bg-red-500/20 border-2 border-red-500 rounded-xl sm:rounded-2xl p-3 mb-3 text-center w-full">
-              <div className="text-3xl mb-1">💀</div>
-              <div className="text-white text-base sm:text-lg font-bold">
-                Eliminated!
-              </div>
-            </div>
-          )}
-          
-          <CircularSimonBoard
-            sequence={currentSequence}
-            round={currentRound}
-            isShowingSequence={isShowingSequence}
-            isInputPhase={isInputPhase}
-            playerSequence={playerSequence}
-            canSubmit={canSubmit}
-            lastResult={lastResult}
-            onColorClick={addColorToSequence}
-            onSubmit={() => {
-              if (gameCode && playerId) {
-                submitSequence(gameCode, playerId);
-              }
-            }}
-            disabled={isEliminated}
-            secondsRemaining={secondsRemaining}
-            timerColor={timerColor}
-            isTimerPulsing={isTimerPulsing}
-          />
-          
-          {/* Message Display */}
-          <div className="mt-6 text-center">
-            <p className="text-white text-lg font-medium">{message}</p>
           </div>
           
-          {/* Players Status */}
-          <div className="mt-8 bg-white/10 backdrop-blur rounded-2xl p-4">
-            <h3 className="text-white font-bold mb-2">Players</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {players.map(player => (
-                <div key={player.id} className="text-white/80 text-sm">
-                  {player.displayName} {player.isHost && '👑'}
-                </div>
-              ))}
+          {/* Eliminated Banner */}
+          {isEliminated && (
+            <div style={{
+              width: '100%',
+              backgroundColor: 'rgba(239, 68, 68, 0.2)',
+              border: '2px solid #ef4444',
+              borderRadius: '0.75rem',
+              padding: '0.5rem',
+              textAlign: 'center',
+            }}>
+              <span style={{ fontSize: '1.5rem' }}>💀</span>
+              <span style={{ color: 'white', fontWeight: 'bold', marginLeft: '0.5rem' }}>
+                Eliminated - Spectating
+              </span>
             </div>
+          )}
+          
+          {/* Simon Board */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', width: '100%' }}>
+            <CircularSimonBoard
+              sequence={currentSequence}
+              round={currentRound}
+              isShowingSequence={isShowingSequence}
+              isInputPhase={isInputPhase}
+              playerSequence={playerSequence}
+              canSubmit={canSubmit}
+              lastResult={lastResult}
+              onColorClick={addColorToSequence}
+              onSubmit={() => {
+                if (gameCode && playerId) {
+                  submitSequence(gameCode, playerId);
+                }
+              }}
+              disabled={isEliminated}
+              secondsRemaining={secondsRemaining}
+              timerColor={timerColor}
+              isTimerPulsing={isTimerPulsing}
+            />
+          </div>
+          
+          {/* Message Display */}
+          <div style={{ 
+            textAlign: 'center', 
+            paddingBottom: '0.5rem',
+            width: '100%',
+          }}>
+            <p style={{ 
+              color: 'white', 
+              fontSize: '0.875rem', 
+              fontWeight: '500',
+              margin: 0,
+            }}>
+              {message}
+            </p>
           </div>
         </div>
       </div>
