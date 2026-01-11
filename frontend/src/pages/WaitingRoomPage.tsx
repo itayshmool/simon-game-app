@@ -383,96 +383,82 @@ export function WaitingRoomPage() {
           gap: '0.5rem',
           height: '100%',
         }}>
-          {/* SCOREBOARD - Compact 2x2 Grid */}
+          {/* SCOREBOARD - Compact horizontal bar like SET game */}
           <div style={{
             width: '100%',
-            backgroundColor: '#ffffff',
-            borderRadius: '0.75rem',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            padding: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
             flexShrink: 0,
           }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '0.375rem',
-            }}>
-              {playerSlots.slice(0, 4).map((player, index) => {
-                if (!player) {
-                  // Empty slot - more compact
-                  return (
-                    <div
-                      key={`empty-${index}`}
-                      style={{
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '0.5rem',
-                        padding: '0.375rem 0.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: '2.25rem',
-                        border: '1px dashed #d1d5db',
-                      }}
-                    >
-                      <span style={{ color: '#9ca3af', fontSize: '0.7rem' }}>Empty</span>
-                    </div>
-                  );
-                }
-                
+            {/* Current player - prominent */}
+            {(() => {
+              const currentPlayer = players.find(p => p.id === playerId);
+              if (!currentPlayer) return null;
+              const avatarEmoji = AVATAR_EMOJIS[currentPlayer.avatarId] || currentPlayer.avatar || '🎮';
+              const score = scores[currentPlayer.id] || 0;
+              const hasSubmitted = submittedPlayers.includes(currentPlayer.id);
+              
+              return (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: 'rgba(139, 92, 246, 0.3)',
+                  borderRadius: '2rem',
+                  padding: '0.375rem 0.75rem 0.375rem 0.375rem',
+                  border: '2px solid rgba(139, 92, 246, 0.5)',
+                }}>
+                  <div style={{
+                    width: '2rem',
+                    height: '2rem',
+                    borderRadius: '50%',
+                    backgroundColor: '#22c55e',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.125rem',
+                  }}>
+                    {avatarEmoji}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                    <span style={{ color: '#a5f3fc', fontSize: '0.625rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                      YOU
+                    </span>
+                    <span style={{ color: '#ffffff', fontSize: '0.875rem', fontWeight: 'bold' }}>
+                      {score} <span style={{ fontSize: '0.625rem', fontWeight: '500' }}>PTS</span>
+                      {hasSubmitted && isInputPhase && <span style={{ color: '#4ade80', marginLeft: '0.25rem' }}>✓</span>}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+            
+            {/* Other players - compact dots/pills */}
+            <div style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>
+              {players.filter(p => p.id !== playerId).map(player => {
+                const avatarEmoji = AVATAR_EMOJIS[player.avatarId] || player.avatar || '🎮';
                 const score = scores[player.id] || 0;
                 const hasSubmitted = submittedPlayers.includes(player.id);
-                const isCurrentPlayer = player.id === playerId;
-                const isPlayerEliminated = false; // TODO: get from playerStatuses
-                const avatarEmoji = AVATAR_EMOJIS[player.avatarId] || player.avatar || '🎮';
                 
                 return (
-                  <div
+                  <div 
                     key={player.id}
                     style={{
-                      backgroundColor: isCurrentPlayer ? '#dbeafe' : '#f9fafb',
-                      borderRadius: '0.5rem',
-                      padding: '0.375rem 0.5rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      border: isCurrentPlayer ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-                      opacity: isPlayerEliminated ? 0.5 : 1,
-                    }}
-                  >
-                    <span style={{ 
-                      color: '#1f2937', 
-                      fontSize: '0.75rem',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.25rem',
-                      overflow: 'hidden',
-                    }}>
-                      <span style={{ fontSize: '1rem' }}>{avatarEmoji}</span>
-                      <span style={{ 
-                        overflow: 'hidden', 
-                        textOverflow: 'ellipsis', 
-                        whiteSpace: 'nowrap',
-                        maxWidth: '3.5rem',
-                        fontWeight: isCurrentPlayer ? '600' : '500',
-                      }}>
-                        {isCurrentPlayer ? 'You' : player.displayName}
-                      </span>
+                      backgroundColor: 'rgba(255,255,255,0.15)',
+                      borderRadius: '1rem',
+                      padding: '0.25rem 0.5rem 0.25rem 0.25rem',
+                    }}
+                    title={`${player.displayName}: ${score} pts`}
+                  >
+                    <span style={{ fontSize: '1rem' }}>{avatarEmoji}</span>
+                    <span style={{ color: '#ffffff', fontSize: '0.7rem', fontWeight: '600' }}>
+                      {score}
+                      {hasSubmitted && isInputPhase && <span style={{ color: '#4ade80' }}>✓</span>}
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <span style={{ 
-                        color: '#7c3aed', 
-                        fontSize: '0.7rem', 
-                        fontWeight: 'bold',
-                      }}>
-                        {score}pt
-                      </span>
-                      {hasSubmitted && isInputPhase && (
-                        <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: 'bold' }}>✓</span>
-                      )}
-                      {isPlayerEliminated && (
-                        <span style={{ fontSize: '0.75rem' }}>💀</span>
-                      )}
-                    </div>
                   </div>
                 );
               })}
