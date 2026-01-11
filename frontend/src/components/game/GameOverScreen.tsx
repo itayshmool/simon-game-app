@@ -40,30 +40,42 @@ interface GameOverScreenProps {
 // =============================================================================
 
 const Confetti: React.FC = () => {
-  const colors = ['#ff4136', '#ffdc00', '#2ecc40', '#0074d9', '#ff6b6b', '#ffd93d'];
-  const confettiPieces = Array.from({ length: 50 }, (_, i) => ({
+  const colors = ['#22c55e', '#facc15', '#f97316', '#ef4444', '#3b82f6', '#a855f7'];
+  const confettiPieces = Array.from({ length: 60 }, (_, i) => ({
     id: i,
     left: Math.random() * 100,
     delay: Math.random() * 3,
-    duration: 2 + Math.random() * 2,
+    duration: 2.5 + Math.random() * 2,
     color: colors[Math.floor(Math.random() * colors.length)],
     rotation: Math.random() * 360,
+    size: 8 + Math.random() * 8,
   }));
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      pointerEvents: 'none',
+      overflow: 'hidden',
+      zIndex: 0,
+    }}>
       {confettiPieces.map((piece) => (
         <div
           key={piece.id}
-          className="absolute w-3 h-3 animate-fall"
           style={{
+            position: 'absolute',
             left: `${piece.left}%`,
             top: '-20px',
+            width: `${piece.size}px`,
+            height: `${piece.size}px`,
             backgroundColor: piece.color,
+            animationName: 'confetti-fall',
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
             animationDelay: `${piece.delay}s`,
             animationDuration: `${piece.duration}s`,
             transform: `rotate(${piece.rotation}deg)`,
-            borderRadius: Math.random() > 0.5 ? '50%' : '0',
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
           }}
         />
       ))}
@@ -94,7 +106,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     if (!winner) return;
     
     const targetScore = winner.score;
-    const duration = 1500; // 1.5 seconds
+    const duration = 1500;
     const steps = 30;
     const increment = targetScore / steps;
     let current = 0;
@@ -116,8 +128,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   useEffect(() => {
     soundService.playVictory();
     
-    // Hide confetti after 5 seconds
-    const timer = setTimeout(() => setShowConfetti(false), 5000);
+    const timer = setTimeout(() => setShowConfetti(false), 6000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -150,7 +161,6 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           url: shareUrl,
         });
       } catch (err) {
-        // User cancelled or error - fallback to copy
         if ((err as Error).name !== 'AbortError') {
           copyToClipboard(shareText + '\n' + shareUrl);
         }
@@ -163,64 +173,123 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      // Could add toast notification here
     } catch (err) {
       console.error('Failed to copy:', err);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4 relative overflow-hidden">
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: '100dvh',
+      background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+      overflow: 'hidden',
+    }}>
       {/* Confetti */}
       {showConfetti && <Confetti />}
       
-      <div className="relative z-10 w-full max-w-md">
+      <div style={{
+        position: 'relative',
+        zIndex: 10,
+        width: '100%',
+        maxWidth: '24rem',
+      }}>
         {/* Game Over Title */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            color: '#ffffff',
+            textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+            margin: 0,
+          }}>
             🎉 GAME OVER 🎉
           </h1>
         </div>
 
-        {/* Winner Section */}
+        {/* Winner Section - White card */}
         {winner && (
-          <div className="bg-gradient-to-br from-yellow-400/20 to-orange-500/20 border-2 border-yellow-400 rounded-2xl p-6 mb-4 text-center relative overflow-hidden">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-yellow-400/10 animate-pulse" />
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            marginBottom: '0.75rem',
+            textAlign: 'center',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+          }}>
+            {/* Crown */}
+            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👑</div>
             
-            <div className="relative z-10">
-              {/* Crown animation */}
-              <div className="text-5xl mb-2 animate-bounce">👑</div>
-              
-              <h2 className="text-2xl font-bold text-yellow-400 mb-2">
-                {isSoloGame ? 'GREAT JOB!' : 'WINNER!'}
-              </h2>
-              
-              <div className="text-white text-xl font-semibold mb-1">
-                {winner.name}
-              </div>
-              
-              <div className="text-4xl font-bold text-yellow-300">
-                {animatedScore} <span className="text-lg">points</span>
-              </div>
-              
-              {isWinner && !isSoloGame && (
-                <div className="mt-2 text-green-400 text-sm font-semibold">
-                  ✨ That's YOU! ✨
-                </div>
-              )}
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: 'bold',
+              color: '#7c3aed',
+              margin: '0 0 0.5rem 0',
+            }}>
+              {isSoloGame ? 'GREAT JOB!' : 'WINNER!'}
+            </h2>
+            
+            <div style={{
+              color: '#1f2937',
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              marginBottom: '0.25rem',
+            }}>
+              {winner.name}
             </div>
+            
+            <div style={{
+              fontSize: '2.5rem',
+              fontWeight: 'bold',
+              color: '#7c3aed',
+            }}>
+              {animatedScore} <span style={{ fontSize: '1rem', color: '#6b7280' }}>points</span>
+            </div>
+            
+            {isWinner && !isSoloGame && (
+              <div style={{
+                marginTop: '0.5rem',
+                color: '#22c55e',
+                fontSize: '0.875rem',
+                fontWeight: '600',
+              }}>
+                ✨ That's YOU! ✨
+              </div>
+            )}
           </div>
         )}
 
         {/* Scoreboard (Multiplayer only) */}
-        {!isSoloGame && finalScores.length > 0 && (
-          <div className="bg-gray-800/80 rounded-2xl p-4 mb-4">
-            <h3 className="text-white font-bold text-center mb-3 text-sm uppercase tracking-wide">
+        {!isSoloGame && finalScores.length > 1 && (
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '1rem',
+            padding: '1rem',
+            marginBottom: '0.75rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          }}>
+            <h3 style={{
+              color: '#6b7280',
+              fontWeight: '600',
+              textAlign: 'center',
+              marginBottom: '0.75rem',
+              fontSize: '0.75rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              margin: '0 0 0.75rem 0',
+            }}>
               Final Standings
             </h3>
             
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               {finalScores.map((player, index) => {
                 const isCurrentPlayer = player.playerId === currentPlayerId;
                 const rank = index + 1;
@@ -228,29 +297,37 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 return (
                   <div
                     key={player.playerId}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
-                      isCurrentPlayer
-                        ? 'bg-blue-600 scale-105'
-                        : rank <= 3
-                          ? 'bg-gray-700'
-                          : 'bg-gray-700/50'
-                    }`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '0.5rem',
+                      backgroundColor: isCurrentPlayer ? '#dbeafe' : '#f9fafb',
+                      border: isCurrentPlayer ? '2px solid #3b82f6' : '1px solid #e5e7eb',
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl w-8 text-center">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.125rem', width: '1.5rem', textAlign: 'center' }}>
                         {getMedal(rank)}
                       </span>
-                      <span className="text-white font-medium">
+                      <span style={{
+                        color: '#1f2937',
+                        fontWeight: isCurrentPlayer ? '600' : '500',
+                        fontSize: '0.875rem',
+                      }}>
                         {player.name}
-                        {isCurrentPlayer && <span className="text-xs ml-1 text-blue-200">(you)</span>}
+                        {isCurrentPlayer && (
+                          <span style={{ fontSize: '0.7rem', marginLeft: '0.25rem', color: '#3b82f6' }}>(you)</span>
+                        )}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-white font-bold">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                      <span style={{ color: '#7c3aed', fontWeight: 'bold', fontSize: '0.875rem' }}>
                         {player.score} pts
                       </span>
                       {player.isEliminated && (
-                        <span className="text-red-400 text-xs">💀</span>
+                        <span style={{ fontSize: '0.75rem' }}>💀</span>
                       )}
                     </div>
                   </div>
@@ -260,59 +337,121 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           </div>
         )}
 
-        {/* Game Stats */}
-        <div className="bg-gray-800/60 rounded-xl p-4 mb-6">
-          <div className="flex justify-around text-center">
-            <div>
-              <div className="text-2xl font-bold text-white">{roundsPlayed}</div>
-              <div className="text-gray-400 text-xs">Rounds</div>
-            </div>
-            <div className="border-l border-gray-600" />
-            <div>
-              <div className="text-2xl font-bold text-white">
-                {finalScores.find(s => s.playerId === currentPlayerId)?.score || 0}
-              </div>
-              <div className="text-gray-400 text-xs">Your Score</div>
-            </div>
-            {!isSoloGame && (
-              <>
-                <div className="border-l border-gray-600" />
-                <div>
-                  <div className="text-2xl font-bold text-white">
-                    #{finalScores.findIndex(s => s.playerId === currentPlayerId) + 1}
-                  </div>
-                  <div className="text-gray-400 text-xs">Your Rank</div>
-                </div>
-              </>
-            )}
+        {/* Game Stats - Compact pills */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          marginBottom: '1rem',
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '2rem',
+            padding: '0.5rem 1rem',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>{roundsPlayed}</div>
+            <div style={{ fontSize: '0.625rem', color: '#6b7280', textTransform: 'uppercase' }}>Rounds</div>
           </div>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '2rem',
+            padding: '0.5rem 1rem',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>
+              {finalScores.find(s => s.playerId === currentPlayerId)?.score || 0}
+            </div>
+            <div style={{ fontSize: '0.625rem', color: '#6b7280', textTransform: 'uppercase' }}>Your Score</div>
+          </div>
+          {!isSoloGame && (
+            <div style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '2rem',
+              padding: '0.5rem 1rem',
+              textAlign: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f2937' }}>
+                #{finalScores.findIndex(s => s.playerId === currentPlayerId) + 1}
+              </div>
+              <div style={{ fontSize: '0.625rem', color: '#6b7280', textTransform: 'uppercase' }}>Rank</div>
+            </div>
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {/* Play Again Button */}
+        {/* Action Buttons - Purple gradient like other screens */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {/* Play Again Button - Green */}
           <button
             onClick={onPlayAgain}
-            className="w-full bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-100 active:scale-95 text-lg flex items-center justify-center gap-2 shadow-lg"
-            style={{ touchAction: 'manipulation' }}
+            style={{
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              borderRadius: '9999px',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
+              color: '#ffffff',
+              boxShadow: '0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3)',
+              touchAction: 'manipulation',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
           >
             🔄 PLAY AGAIN
           </button>
 
-          {/* Home Button */}
+          {/* Home Button - Purple */}
           <button
             onClick={onGoHome}
-            className="w-full bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-100 active:scale-95 text-lg flex items-center justify-center gap-2"
-            style={{ touchAction: 'manipulation' }}
+            style={{
+              width: '100%',
+              padding: '0.875rem 1.5rem',
+              borderRadius: '9999px',
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'linear-gradient(180deg, #c084fc 0%, #a855f7 50%, #7c3aed 100%)',
+              color: '#ffffff',
+              boxShadow: '0 4px 0 0 #581c87, 0 6px 12px rgba(88, 28, 135, 0.3)',
+              touchAction: 'manipulation',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
           >
             🏠 HOME
           </button>
 
-          {/* Share Button */}
+          {/* Share Button - Blue */}
           <button
             onClick={handleShare}
-            className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-100 active:scale-95 flex items-center justify-center gap-2"
-            style={{ touchAction: 'manipulation' }}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '9999px',
+              fontWeight: 'bold',
+              fontSize: '0.875rem',
+              border: 'none',
+              cursor: 'pointer',
+              background: 'linear-gradient(180deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)',
+              color: '#ffffff',
+              boxShadow: '0 4px 0 0 #1d4ed8, 0 6px 12px rgba(29, 78, 216, 0.3)',
+              touchAction: 'manipulation',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}
           >
             📤 SHARE SCORE
           </button>
@@ -321,7 +460,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 
       {/* CSS for confetti animation */}
       <style>{`
-        @keyframes fall {
+        @keyframes confetti-fall {
           0% {
             transform: translateY(0) rotate(0deg);
             opacity: 1;
@@ -330,9 +469,6 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
             transform: translateY(100vh) rotate(720deg);
             opacity: 0;
           }
-        }
-        .animate-fall {
-          animation: fall linear infinite;
         }
       `}</style>
     </div>
