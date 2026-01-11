@@ -1,20 +1,22 @@
 /**
  * Entry Page
  * 
- * Name + avatar selection page.
- * First screen players see.
+ * - Landing: Only "Create Game" button
+ * - Invite link (?join=CODE): Direct to join form
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createSession, joinGame } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
 
 export function EntryPage() {
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<'create' | 'join' | null>(null);
+  const joinCode = searchParams.get('join')?.toUpperCase() || null;
+  
+  // If invite link, go straight to join form; otherwise show landing
+  const [showForm, setShowForm] = useState(!!joinCode);
   const [displayName, setDisplayName] = useState('');
-  const [gameCode, setGameCode] = useState('');
   const [avatarId, setAvatarId] = useState('1');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,91 +24,75 @@ export function EntryPage() {
   const { setSession } = useAuthStore();
   const navigate = useNavigate();
   
-  // Handle invite link with game code in URL
-  useEffect(() => {
-    const joinCode = searchParams.get('join');
-    if (joinCode) {
-      setMode('join');
-      setGameCode(joinCode.toUpperCase());
-    }
-  }, [searchParams]);
+  const isJoining = !!joinCode;
 
-  const handleCreateGame = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await createSession(displayName, avatarId);
-      setSession(response.session);
+      if (isJoining) {
+        // Join existing game via invite link
+        const response = await joinGame(displayName, avatarId, joinCode);
+        setSession(response.session);
+      } else {
+        // Create new game
+        const response = await createSession(displayName, avatarId);
+        setSession(response.session);
+      }
       navigate('/waiting');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create game');
+      setError(err instanceof Error ? err.message : isJoining ? 'Failed to join game' : 'Failed to create game');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinGame = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(false);
-
-    try {
-      const response = await joinGame(displayName, avatarId, gameCode);
-      setSession(response.session);
-      navigate('/waiting');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join game');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!mode) {
+  // Landing page - only "Create Game" button
+  if (!showForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-3 sm:p-4">
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
           <h1 className="text-3xl sm:text-4xl font-bold text-center mb-2">🎮 Simon Says</h1>
           <p className="text-gray-600 text-center mb-6 sm:mb-8 text-sm sm:text-base">Color Race Edition</p>
           
-          <div className="space-y-3 sm:space-y-4">
-            <button
-              onClick={() => setMode('create')}
-              className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 active:scale-98 text-white font-bold py-3 sm:py-4 px-6 rounded-lg sm:rounded-xl transition-all duration-75 text-base sm:text-lg min-h-[56px]"
-              style={{ touchAction: 'manipulation' }}
-            >
-              Create Game
-            </button>
-            
-            <button
-              onClick={() => setMode('join')}
-              className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 active:scale-98 text-white font-bold py-3 sm:py-4 px-6 rounded-lg sm:rounded-xl transition-all duration-75 text-base sm:text-lg min-h-[56px]"
-              style={{ touchAction: 'manipulation' }}
-            >
-              Join Game
-            </button>
-          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 active:scale-98 text-white font-bold py-3 sm:py-4 px-6 rounded-lg sm:rounded-xl transition-all duration-75 text-base sm:text-lg min-h-[56px]"
+            style={{ touchAction: 'manipulation' }}
+          >
+            Create Game
+          </button>
         </div>
       </div>
     );
   }
 
+  // Form - for both creating and joining (via invite link)
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-3 sm:p-4">
       <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 max-w-md w-full">
-        <button
-          onClick={() => setMode(null)}
-          className="text-gray-600 hover:text-gray-800 active:text-gray-900 mb-4 text-sm sm:text-base"
-        >
-          ← Back
-        </button>
+        {!isJoining && (
+          <button
+            onClick={() => setShowForm(false)}
+            className="text-gray-600 hover:text-gray-800 active:text-gray-900 mb-4 text-sm sm:text-base"
+          >
+            ← Back
+          </button>
+        )}
         
         <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
-          {mode === 'create' ? 'Create Game' : 'Join Game'}
+          {isJoining ? 'Join Game' : 'Create Game'}
         </h2>
         
-        <form onSubmit={mode === 'create' ? handleCreateGame : handleJoinGame} className="space-y-3 sm:space-y-4">
+        {isJoining && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-800 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm mb-4">
+            🎮 Joining game: <span className="font-mono font-bold">{joinCode}</span>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
               Display Name
@@ -119,31 +105,10 @@ export function EntryPage() {
               minLength={3}
               maxLength={12}
               required
+              autoFocus
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent text-sm sm:text-base"
             />
           </div>
-          
-          {mode === 'join' && (
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                Game Code
-                {searchParams.get('join') && (
-                  <span className="ml-2 text-xs text-green-600 font-normal">
-                    ✅ Pre-filled from invite link
-                  </span>
-                )}
-              </label>
-              <input
-                type="text"
-                value={gameCode}
-                onChange={(e) => setGameCode(e.target.value.toUpperCase())}
-                placeholder="ABCDEF"
-                maxLength={6}
-                required
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent uppercase text-sm sm:text-base"
-              />
-            </div>
-          )}
           
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
@@ -180,7 +145,7 @@ export function EntryPage() {
             className="w-full bg-purple-600 hover:bg-purple-700 active:bg-purple-800 active:scale-98 disabled:bg-gray-400 text-white font-bold py-3 sm:py-4 px-6 rounded-lg sm:rounded-xl transition-all duration-75 text-base sm:text-lg min-h-[56px]"
             style={{ touchAction: 'manipulation' }}
           >
-            {loading ? 'Loading...' : mode === 'create' ? 'Create Game' : 'Join Game'}
+            {loading ? 'Loading...' : isJoining ? 'Join Game' : 'Create Game'}
           </button>
         </form>
       </div>
