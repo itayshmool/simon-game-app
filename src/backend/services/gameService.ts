@@ -5,9 +5,14 @@
  * This is the core of the multiplayer platform infrastructure.
  * 
  * 100% REUSABLE - Do not add game-specific logic here.
+ * 
+ * PERSISTENCE: Rooms are saved to disk to survive server restarts.
+ * Set DATA_DIR env var to a persistent disk path for full persistence.
  */
 
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 import type { 
   GameRoom, 
   Player, 
@@ -18,11 +23,82 @@ import { PLATFORM_CONSTANTS } from '@shared/types';
 import { generateGameCode } from '../utils/gameCode';
 
 // =============================================================================
+// PERSISTENCE CONFIG
+// =============================================================================
+
+// Use DATA_DIR env var for persistent disk, fallback to /tmp (survives restarts, not deploys)
+const DATA_DIR = process.env.DATA_DIR || '/tmp';
+const ROOMS_FILE = path.join(DATA_DIR, 'simon-rooms.json');
+
+// Debounce save to avoid excessive disk writes
+let saveTimeout: NodeJS.Timeout | null = null;
+const SAVE_DEBOUNCE_MS = 500;
+
+// =============================================================================
 // SERVICE CLASS
 // =============================================================================
 
 export class GameService {
   private rooms: Map<string, GameRoom> = new Map();
+  
+  constructor() {
+    this.loadFromDisk();
+  }
+
+  // ===========================================================================
+  // PERSISTENCE
+  // ===========================================================================
+
+  /**
+   * Load rooms from disk on startup
+   */
+  private loadFromDisk(): void {
+    try {
+      if (fs.existsSync(ROOMS_FILE)) {
+        const data = fs.readFileSync(ROOMS_FILE, 'utf-8');
+        const roomsArray: GameRoom[] = JSON.parse(data);
+        
+        // Convert dates back from strings
+        for (const room of roomsArray) {
+          room.createdAt = new Date(room.createdAt);
+          for (const player of room.players) {
+            player.lastActivity = new Date(player.lastActivity);
+            // Reset connection state on server restart
+            player.connected = false;
+            player.socketId = null;
+          }
+          this.rooms.set(room.gameCode, room);
+        }
+        
+        console.log(`📂 Loaded ${roomsArray.length} rooms from disk`);
+      } else {
+        console.log('📂 No rooms file found, starting fresh');
+      }
+    } catch (error) {
+      console.error('❌ Failed to load rooms from disk:', error);
+    }
+  }
+
+  /**
+   * Save rooms to disk (debounced)
+   */
+  private saveToDisk(): void {
+    // Clear existing timeout
+    if (saveTimeout) {
+      clearTimeout(saveTimeout);
+    }
+    
+    // Debounce saves
+    saveTimeout = setTimeout(() => {
+      try {
+        const roomsArray = Array.from(this.rooms.values());
+        fs.writeFileSync(ROOMS_FILE, JSON.stringify(roomsArray, null, 2));
+        console.log(`💾 Saved ${roomsArray.length} rooms to disk`);
+      } catch (error) {
+        console.error('❌ Failed to save rooms to disk:', error);
+      }
+    }, SAVE_DEBOUNCE_MS);
+  }
 
   // ===========================================================================
   // ROOM MANAGEMENT
@@ -54,6 +130,7 @@ export class GameService {
     };
 
     this.rooms.set(gameCode, room);
+    this.saveToDisk();
     
     return room;
   }
@@ -76,7 +153,9 @@ export class GameService {
    * Delete a room
    */
   deleteRoom(gameCode: string): boolean {
-    return this.rooms.delete(gameCode);
+    const result = this.rooms.delete(gameCode);
+    if (result) this.saveToDisk();
+    return result;
   }
 
   /**
@@ -87,6 +166,7 @@ export class GameService {
     if (!room) return null;
     
     room.status = status;
+    this.saveToDisk();
     return room;
   }
 
@@ -98,6 +178,7 @@ export class GameService {
     if (!room) return null;
     
     room.gameState = gameState;
+    this.saveToDisk();
     return room;
   }
 
@@ -134,6 +215,7 @@ export class GameService {
     };
 
     room.players.push(player);
+    this.saveToDisk();
     
     return room;
   }
@@ -165,6 +247,7 @@ export class GameService {
     player.socketId = socketId;
     player.connected = true;
     player.lastActivity = new Date();
+    this.saveToDisk();
 
     return room;
   }
@@ -181,6 +264,7 @@ export class GameService {
 
     player.connected = false;
     player.socketId = null;
+    this.saveToDisk();
   }
 
   /**
@@ -212,6 +296,7 @@ export class GameService {
     if (!player) return;
 
     player.lastActivity = new Date();
+    // Don't save to disk for activity updates (too frequent)
   }
 
   /**
@@ -231,6 +316,7 @@ export class GameService {
     // If room is empty, delete it
     if (room.players.length === 0) {
       this.rooms.delete(gameCode);
+      this.saveToDisk();
       return true;
     }
 
@@ -239,6 +325,7 @@ export class GameService {
       room.players[0].isHost = true;
     }
 
+    this.saveToDisk();
     return true;
   }
 
@@ -278,6 +365,9 @@ export class GameService {
       }
     }
 
+    if (cleaned > 0) {
+      this.saveToDisk();
+    }
     return cleaned;
   }
 
@@ -293,6 +383,7 @@ export class GameService {
    */
   clearAllRooms(): void {
     this.rooms.clear();
+    this.saveToDisk();
   }
 }
 
