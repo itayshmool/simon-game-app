@@ -91,9 +91,17 @@ export function WaitingRoomPage() {
     const socket = socketService.connect();
     console.log('✅ Socket connected:', socket.connected, 'id:', socket.id);
     
-    // Track socket connection state
+    // Track socket connection state and handle reconnection
     socket.on('connect', () => {
       console.log('🔌 Socket reconnected:', socket.id);
+      
+      // Re-join room on reconnection (important for mobile when app goes to background)
+      const currentGameCode = gameCodeRef.current;
+      const currentPlayerId = playerIdRef.current;
+      if (currentGameCode && currentPlayerId) {
+        console.log('🔄 Re-joining room after reconnect:', { gameCode: currentGameCode, playerId: currentPlayerId });
+        socket.emit('join_room_socket', { gameCode: currentGameCode, playerId: currentPlayerId });
+      }
     });
     
     socket.on('disconnect', (reason) => {
