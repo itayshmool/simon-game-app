@@ -329,16 +329,24 @@ function registerPlatformHandlers(io: Server, socket: SocketWithSession): void {
         return;
       }
       
-      // Reset room to waiting state
-      room.status = 'waiting';
-      room.gameState = null;
+      // Reset room to waiting state using gameService (saves to Redis)
+      gameService.updateRoomStatus(gameCode, 'waiting');
+      gameService.updateGameState(gameCode, null);
+      
+      // Re-fetch the updated room
+      const updatedRoom = gameService.getRoom(gameCode);
+      if (!updatedRoom) {
+        console.error(`❌ Failed to get updated room: ${gameCode}`);
+        socket.emit('error', { message: 'Failed to restart game' });
+        return;
+      }
       
       console.log(`✅ Room ${gameCode} reset to waiting state`);
       
       // Broadcast updated room state to all players
       io.to(gameCode).emit('room_state_update', {
-        ...room,
-        players: room.players.map(p => ({
+        ...updatedRoom,
+        players: updatedRoom.players.map(p => ({
           id: p.id,
           displayName: p.displayName,
           avatarId: p.avatarId,

@@ -368,7 +368,7 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
   },
   
   /**
-   * Reset game state
+   * Reset game state (for Play Again)
    */
   resetGame: () => {
     set({
@@ -382,6 +382,16 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
       lastResult: null,
       message: 'Waiting for game to start...',
       isGameActive: false,
+      // Critical for Play Again
+      isGameOver: false,
+      gameWinner: null,
+      finalScores: [],
+      isEliminated: false,
+      scores: {},
+      submittedPlayers: [],
+      secondsRemaining: 0,
+      timerColor: 'green',
+      isTimerPulsing: false,
     });
   },
   
