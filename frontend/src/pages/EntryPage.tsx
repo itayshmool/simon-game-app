@@ -56,18 +56,22 @@ export function EntryPage() {
     return <SimonSplashScreen onComplete={() => setShowForm(true)} />;
   }
 
-  // Create Game Form - fits viewport without scrolling
+  // Create Game Form - fits viewport without scrolling or moving
   return (
     <div 
       style={{
-        height: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '100dvh',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1rem',
-        position: 'relative',
         overflow: 'hidden',
         boxSizing: 'border-box',
         background: 'linear-gradient(135deg, #4ade80 0%, #facc15 25%, #f97316 50%, #ef4444 75%, #3b82f6 100%)',
