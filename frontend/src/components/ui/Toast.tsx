@@ -2,9 +2,11 @@
  * Toast Notification Component
  * 
  * Shows temporary success/error messages as a floating overlay
+ * Uses React Portal to render outside parent containers
  */
 
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ToastProps {
   message: string;
@@ -34,15 +36,16 @@ export function Toast({ message, type = 'success', duration = 3000, onClose }: T
     info: '👋',
   };
 
-  return (
+  const toastContent = (
     <div
       style={{
         position: 'fixed',
         top: '1rem',
         left: '50%',
         transform: 'translateX(-50%)',
-        zIndex: 9999,
-        animation: 'slideDown 0.3s ease-out',
+        zIndex: 99999,
+        animation: 'toastSlideDown 0.3s ease-out',
+        pointerEvents: 'auto',
       }}
     >
       <div
@@ -77,7 +80,7 @@ export function Toast({ message, type = 'success', duration = 3000, onClose }: T
         </button>
       </div>
       <style>{`
-        @keyframes slideDown {
+        @keyframes toastSlideDown {
           from {
             opacity: 0;
             transform: translateX(-50%) translateY(-20px);
@@ -90,4 +93,7 @@ export function Toast({ message, type = 'success', duration = 3000, onClose }: T
       `}</style>
     </div>
   );
+
+  // Use Portal to render at document body level
+  return createPortal(toastContent, document.body);
 }
