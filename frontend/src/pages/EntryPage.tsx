@@ -10,9 +10,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createSession, joinGame } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
 import { SimonSplashScreen } from '../components/ui/SimonSplashScreen';
+import type { Difficulty } from '../shared/types';
 
 // Avatar options
 const AVATARS = ['🦁', '🐯', '🦊', '🐼', '🐸', '🦄', '🐙', '🦋', '🐨', '🦉'];
+
+// Difficulty options
+const DIFFICULTIES: { value: Difficulty; label: string; emoji: string; color: string }[] = [
+  { value: 'easy', label: 'Easy', emoji: '🐢', color: '#22c55e' },
+  { value: 'medium', label: 'Medium', emoji: '🐇', color: '#f59e0b' },
+  { value: 'hard', label: 'Hard', emoji: '🚀', color: '#ef4444' },
+];
 
 export function EntryPage() {
   const [searchParams] = useSearchParams();
@@ -21,6 +29,7 @@ export function EntryPage() {
   const [showForm, setShowForm] = useState(!!joinCode);
   const [displayName, setDisplayName] = useState('');
   const [avatarId, setAvatarId] = useState('1');
+  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -40,7 +49,7 @@ export function EntryPage() {
         const response = await joinGame(displayName, avatarId, joinCode);
         setSession(response.session);
       } else {
-        const response = await createSession(displayName, avatarId);
+        const response = await createSession(displayName, avatarId, difficulty);
         setSession(response.session);
       }
       navigate('/waiting');
@@ -266,6 +275,61 @@ export function EntryPage() {
             />
           </div>
         </div>
+        
+        {/* Difficulty Selector - only shown when creating game */}
+        {!isJoining && (
+          <div 
+            style={{
+              width: '100%',
+              backgroundColor: '#ffffff',
+              borderRadius: '0.75rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              padding: '0.75rem',
+            }}
+          >
+            <label style={{ display: 'block', fontSize: '1rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
+              Game Speed:
+            </label>
+            
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {DIFFICULTIES.map((diff) => {
+                const isSelected = difficulty === diff.value;
+                return (
+                  <button
+                    key={diff.value}
+                    type="button"
+                    onClick={() => setDifficulty(diff.value)}
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0.5rem 0.25rem',
+                      borderRadius: '0.5rem',
+                      border: isSelected ? `3px solid ${diff.color}` : '2px solid #e5e7eb',
+                      backgroundColor: isSelected ? `${diff.color}15` : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.25rem', marginBottom: '0.125rem' }}>{diff.emoji}</span>
+                    <span 
+                      style={{ 
+                        fontSize: '0.75rem', 
+                        fontWeight: isSelected ? 'bold' : 'normal',
+                        color: isSelected ? diff.color : '#6b7280',
+                      }}
+                    >
+                      {diff.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         
         {/* Error message */}
         {error && (
