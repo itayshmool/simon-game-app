@@ -70,7 +70,16 @@ export function WaitingRoomPage() {
     
     // Connect socket first
     const socket = socketService.connect();
-    console.log('✅ Socket connected:', socket.connected);
+    console.log('✅ Socket connected:', socket.connected, 'id:', socket.id);
+    
+    // Track socket connection state
+    socket.on('connect', () => {
+      console.log('🔌 Socket reconnected:', socket.id);
+    });
+    
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 Socket disconnected! Reason:', reason);
+    });
     
     // Initialize Simon game listeners
     initializeListeners();
@@ -93,14 +102,27 @@ export function WaitingRoomPage() {
     
     // Listen for room state updates (when players join/leave)
     socket.on('room_state_update', (room: any) => {
-      console.log('🔄 Room state updated:', room);
-      console.log('🔄 Players in update:', room.players);
-      setPlayers(room.players || []);
-      setRoomStatus(room.status);
-      
-      // Check if we're the host
-      const me = room.players?.find((p: any) => p.id === playerId);
-      setIsHost(me?.isHost || false);
+      try {
+        console.log('🔄 Room state updated:', JSON.stringify(room));
+        console.log('🔄 Players in update:', JSON.stringify(room.players));
+        
+        if (room.players && Array.isArray(room.players)) {
+          setPlayers(room.players);
+        } else {
+          console.warn('⚠️ Invalid players data:', room.players);
+        }
+        
+        if (room.status) {
+          setRoomStatus(room.status);
+        }
+        
+        // Check if we're the host
+        const me = room.players?.find((p: any) => p.id === playerId);
+        setIsHost(me?.isHost || false);
+        console.log('✅ Room state update processed successfully');
+      } catch (err) {
+        console.error('❌ Error processing room_state_update:', err);
+      }
     });
     
     // Listen for errors
@@ -130,8 +152,10 @@ export function WaitingRoomPage() {
     
     // Listen for player joined (show toast notification)
     socket.on('player_joined', (player: any) => {
-      console.log('👋 Player joined:', player);
-      setToast({ message: `${player.displayName} joined!`, type: 'info' });
+      console.log('👋 Player joined event received:', JSON.stringify(player));
+      if (player && player.displayName) {
+        setToast({ message: `${player.displayName} joined!`, type: 'info' });
+      }
     });
     
     // Listen for player left
@@ -157,7 +181,10 @@ export function WaitingRoomPage() {
     
     // Cleanup on unmount
     return () => {
+      console.log('🧹 WaitingRoomPage cleanup');
       cleanup();
+      socket.off('connect');
+      socket.off('disconnect');
       socket.off('room_state');
       socket.off('room_state_update');
       socket.off('error');
