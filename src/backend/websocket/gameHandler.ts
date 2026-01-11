@@ -84,7 +84,7 @@ export function initializeGameHandlers(io: Server): void {
 /**
  * Attempt to auto-reconnect player from session cookie
  */
-function handleAutoReconnect(_io: Server, socket: SocketWithSession): void {
+function handleAutoReconnect(io: Server, socket: SocketWithSession): void {
   try {
     const cookieHeader = socket.request.headers.cookie;
     if (!cookieHeader) return;
@@ -134,7 +134,10 @@ function handleAutoReconnect(_io: Server, socket: SocketWithSession): void {
     // Send current room state to reconnected player
     socket.emit('room_state', room);
     
+    // Log socket room members for debugging
+    const socketsInRoom = io.sockets.adapter.rooms.get(gameCode);
     console.log(`✅ Auto-reconnected: ${displayName} to room ${gameCode}`);
+    console.log(`📡 Sockets in room after reconnect:`, socketsInRoom ? Array.from(socketsInRoom) : 'none');
   } catch (error) {
     console.error('❌ Auto-reconnect error:', error);
   }
@@ -207,6 +210,10 @@ function registerPlatformHandlers(io: Server, socket: SocketWithSession): void {
       
       // Broadcast updated room state to ALL players in the room
       io.to(gameCode).emit('room_state_update', roomData);
+      
+      // Log socket room members for debugging
+      const socketsInRoom = io.sockets.adapter.rooms.get(gameCode);
+      console.log(`📡 Sockets in room ${gameCode}:`, socketsInRoom ? Array.from(socketsInRoom) : 'none');
       
       // Also notify others for UI feedback
       socket.to(gameCode).emit('player_joined', {
