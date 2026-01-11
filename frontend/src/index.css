@@ -17,6 +17,10 @@
   --color-text-primary: #1f2937;
   --color-text-secondary: #6b7280;
   --color-text-muted: #9ca3af;
+  
+  /* Game Fonts */
+  --font-display: 'Fredoka', 'Nunito', system-ui, sans-serif;
+  --font-score: 'Orbitron', 'JetBrains Mono', monospace;
 }
 
 .dark {
@@ -197,4 +201,37 @@ textarea {
 .watch-pattern-text {
   animation: attention-pulse 1s ease-in-out infinite;
   display: inline-block;
+}
+
+/* =============================================================================
+   GAME FONTS
+   ============================================================================= */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-score {
+  font-family: var(--font-score);
+  font-variant-numeric: tabular-nums;
+}
+
+/* =============================================================================
+   SUBMIT BUTTON PULSE
+   Attention-grabbing pulse when ready to submit
+   ============================================================================= */
+
+@keyframes submit-ready-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 0 0 #166534, 0 6px 12px rgba(22, 101, 52, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 4px 0 0 #166534, 0 6px 20px rgba(34, 197, 94, 0.5), 0 0 30px rgba(34, 197, 94, 0.3);
+  }
+}
+
+.submit-ready-pulse {
+  animation: submit-ready-pulse 1.5s ease-in-out infinite;
 }

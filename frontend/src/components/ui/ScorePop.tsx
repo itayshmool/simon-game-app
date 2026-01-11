@@ -40,6 +40,7 @@ export function ScorePop({ points, onComplete }: ScorePopProps) {
       }}
     >
       <span
+        className="font-score"
         style={{
           fontSize: '3rem',
           fontWeight: '900',
@@ -49,7 +50,6 @@ export function ScorePop({ points, onComplete }: ScorePopProps) {
             0 0 40px rgba(34, 197, 94, 0.6),
             0 2px 4px rgba(0, 0, 0, 0.3)
           `,
-          fontFamily: 'system-ui, sans-serif',
         }}
       >
         +{points}

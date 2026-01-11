@@ -559,7 +559,7 @@ export const CircularSimonBoard: React.FC<CircularSimonBoardProps> = ({
             onSubmit();
           }}
           disabled={!canSubmit}
-          className={canSubmit ? 'arcade-btn arcade-btn-green' : ''}
+          className={canSubmit ? 'arcade-btn arcade-btn-green submit-ready-pulse' : ''}
           style={{
             width: '100%',
             maxWidth: 'min(75vw, 280px)',

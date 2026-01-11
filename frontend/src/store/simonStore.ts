@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import type { Color, SimonGameState } from '../shared/types';
 import { socketService } from '../services/socketService';
 import { soundService } from '../services/soundService';
+import { hapticService } from '../services/hapticService';
 
 // =============================================================================
 // TYPES
@@ -199,11 +200,13 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
       const store = get();
       store.stopTimer();
       
-      // 🔊 Play success or error sound
+      // 🔊 Play success or error sound + haptic
       if (data.isCorrect) {
         soundService.playSuccess();
+        hapticService.success();
       } else {
         soundService.playError();
+        hapticService.error();
       }
       
       set({
@@ -226,8 +229,9 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
       const store = get();
       store.stopTimer();
       
-      // 🔊 Play timeout sound
+      // 🔊 Play timeout sound + haptic
       soundService.playTimeout();
+      hapticService.error();
       
       set({
         isInputPhase: false,
@@ -313,8 +317,9 @@ export const useSimonStore = create<SimonStore>((set, get) => ({
     socket.on('simon:player_eliminated', (data: { playerId: string; playerName: string; reason: string }) => {
       console.log('💀 Player eliminated:', data);
       
-      // 🔊 Play elimination sound
+      // 🔊 Play elimination sound + haptic
       soundService.playEliminated();
+      hapticService.eliminated();
       
       set({
         message: `${data.playerName} eliminated: ${data.reason}`,

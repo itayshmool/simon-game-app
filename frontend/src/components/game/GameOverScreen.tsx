@@ -11,7 +11,9 @@
 
 import { useEffect, useState } from 'react';
 import { soundService } from '../../services/soundService';
+import { hapticService } from '../../services/hapticService';
 import { useThemeStore } from '../../store/themeStore';
+import { Toast } from '../ui/Toast';
 
 // =============================================================================
 // TYPES
@@ -99,6 +101,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
 }) => {
   const [showConfetti, setShowConfetti] = useState(true);
   const [animatedScore, setAnimatedScore] = useState(0);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const { theme } = useThemeStore();
   const isDark = theme === 'dark';
   const isWinner = winner?.playerId === currentPlayerId;
@@ -127,9 +130,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
     return () => clearInterval(timer);
   }, [winner]);
 
-  // Play victory sound on mount
+  // Play victory sound + haptic on mount
   useEffect(() => {
     soundService.playVictory();
+    hapticService.victory();
     
     const timer = setTimeout(() => setShowConfetti(false), 6000);
     return () => clearTimeout(timer);
@@ -163,6 +167,7 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
           text: shareText,
           url: shareUrl,
         });
+        setToast({ message: 'Shared successfully!', type: 'success' });
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           copyToClipboard(shareText + '\n' + shareUrl);
@@ -176,7 +181,10 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      setToast({ message: 'Copied to clipboard!', type: 'success' });
+      hapticService.success();
     } catch (err) {
+      setToast({ message: 'Failed to copy', type: 'error' });
       console.error('Failed to copy:', err);
     }
   };
@@ -198,6 +206,15 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
       padding: '1rem',
       overflow: 'hidden',
     }}>
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+      
       {/* Confetti */}
       {showConfetti && <Confetti />}
       
@@ -251,12 +268,15 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
               {winner.name}
             </div>
             
-            <div style={{
-              fontSize: '2.5rem',
-              fontWeight: 'bold',
-              color: '#7c3aed',
-            }}>
-              {animatedScore} <span style={{ fontSize: '1rem', color: isDark ? '#d1d5db' : '#6b7280' }}>points</span>
+            <div 
+              className="font-score"
+              style={{
+                fontSize: '2.5rem',
+                fontWeight: 'bold',
+                color: '#7c3aed',
+              }}
+            >
+              {animatedScore} <span style={{ fontSize: '1rem', color: isDark ? '#d1d5db' : '#6b7280', fontFamily: 'system-ui' }}>points</span>
             </div>
             
             {isWinner && !isSoloGame && (
@@ -300,18 +320,22 @@ export const GameOverScreen: React.FC<GameOverScreenProps> = ({
                 const rank = index + 1;
                 
                 return (
-                  <div
-                    key={player.playerId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.5rem',
-                      backgroundColor: isCurrentPlayer ? '#dbeafe' : '#f9fafb',
-                      border: isCurrentPlayer ? '2px solid #3b82f6' : '1px solid #e5e7eb',
-                    }}
-                  >
+                    <div
+                      key={player.playerId}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '0.5rem',
+                        backgroundColor: isCurrentPlayer 
+                          ? (isDark ? '#1e3a5f' : '#dbeafe')
+                          : (isDark ? '#2a2a2a' : '#f9fafb'),
+                        border: isCurrentPlayer 
+                          ? '2px solid #3b82f6' 
+                          : `1px solid ${isDark ? '#3f3f3f' : '#e5e7eb'}`,
+                      }}
+                    >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '1.125rem', width: '1.5rem', textAlign: 'center' }}>
                         {getMedal(rank)}
